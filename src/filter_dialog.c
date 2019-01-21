@@ -128,6 +128,123 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 /*                    APPLY SCALER                     */
 /*******************************************************/
 
-void     pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
+
+
+
+
+/*
+// TODO
+ * Cartoon algorithm
+ * -----------------
+ * Mask radius = radius of pixel neighborhood for intensity comparison
+ * Threshold   = relative intensity difference which will result in darkening
+ * Ramp        = amount of relative intensity difference before total black
+ * Blur radius = mask radius / 3.0
+ *
+ * Algorithm:
+ * For each pixel, calculate pixel intensity value to be: avg (blur radius)
+ * relative diff = pixel intensity / avg (mask radius)
+ * If relative diff < Threshold
+ *   intensity mult = (Ramp - MIN (Ramp, (Threshold - relative diff))) / Ramp
+ *   pixel intensity *= intensity mult
+ */
+
+
+// static void pixel_art_scalers_run (GimpDrawable *drawable)
+//                    gint          pixelwidth,
+//                    gint          pixelheight,
+//                    gint          tile_width,
+//                    gint          tile_height)
+void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 {
+    GimpPixelRgn src_rgn, dest_rgn;
+    gint         bpp, has_alpha;
+    gint         x1, y1, x2, y2, width, height;
+    gint         progress, max_progress;
+
+    if (! gimp_drawable_mask_intersect (drawable->drawable_id, &x1, &y1, &width, &height))
+        return;
+/*
+// Switch to
+    if (preview) {
+        gimp_preview_get_position (preview, &x1, &y1);
+        gimp_preview_get_size (preview, &width, &height);
+    }
+    else if (! gimp_drawable_mask_intersect (drawable->drawable_id,
+                                             &x1, &y1, &width, &height)) {
+        return;
+    }
+*/
+
+    // FALSE, FALSE : region will be used to read the actual drawable datas
+    gimp_pixel_rgn_init (&src_rgn,
+                         drawable,
+                         0,
+                         0,
+                         drawable->width,
+                         drawable->height,
+                         FALSE, FALSE);
+
+    // TRUE,  TRUE  : region will be used to write to the shadow tiles
+    // i.e. make changes that will be written back to source tiles
+    gimp_pixel_rgn_init (&dest_rgn,
+                         drawable,
+                         0,
+                         0,
+                         drawable->width,
+                         drawable->height,
+                         TRUE, TRUE);
+
+
+    // Initialize progress indicator
+    progress = 0;
+    max_progress = width * height;
+
+    // Get bit depth and alpha mask status
+    bpp = drawable->bpp;
+    has_alpha = gimp_drawable_has_alpha (drawable->drawable_id);
+
+
+    // guchar * offset;
+    // p_workbuf = g_new (guchar, width * height * bpp);
+    guchar * p_workbuf = g_new (guchar, bpp);
+
+    for (gint y = 0; y < height; y++) {
+        for (gint x = 0; x < width; x++) {
+
+            // Optimize... use get_col or get_rect
+            gimp_pixel_rgn_get_pixel (&src_rgn,
+                                      p_workbuf,
+                                      x, y);
+
+            // XOR
+            *(p_workbuf    ) ^= 0xFF;
+            *(p_workbuf + 1) ^= 0xFF;
+            *(p_workbuf + 2) ^= 0xFF;
+
+            // offset = (x * y * bpp);
+            //*(p_workbuf + offset) ^= 0xFF;
+
+            gimp_pixel_rgn_set_pixel (&dest_rgn,
+                                      p_workbuf,
+                                      x, y);
+        }
+        gimp_progress_update ((double) y / (double) height);
+    }
+
+    // Update progress to 100% compelte
+    gimp_progress_update (1.0);
+
+    // Apply the changes to the image
+    gimp_drawable_flush (drawable);
+    gimp_drawable_merge_shadow (drawable->drawable_id, TRUE);
+    gimp_drawable_update (drawable->drawable_id, x1, y1, width, height);
+
+    // TODO?
+    // See: https://www.gimp.org/docs/scheme_plugin/imagedata.html
+    //gimp_displays_flush();
+    //gimp_drawable_detach(drawable);
 }
+
+
+
