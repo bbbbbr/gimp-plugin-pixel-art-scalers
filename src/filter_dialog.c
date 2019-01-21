@@ -162,8 +162,17 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     gint         x1, y1, x2, y2, width, height;
     gint         progress, max_progress;
 
+    guchar *src, *s;
+    guchar *dest, *d;
+    gint    red, green, blue, alpha;
+    gint    x, y;
+    gpointer pr;
+
+
     if (! gimp_drawable_mask_intersect (drawable->drawable_id, &x1, &y1, &width, &height))
         return;
+
+// TODO: Handle Preview!
 /*
 // Switch to
     if (preview) {
@@ -205,6 +214,45 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     has_alpha = gimp_drawable_has_alpha (drawable->drawable_id);
 
 
+
+    // Process the image
+
+    for (pr = gimp_pixel_rgns_register (2, &src_rgn, &dest_rgn);
+         pr != NULL;
+         pr = gimp_pixel_rgns_process (pr))
+    {
+        src = src_rgn.data;
+        dest = dest_rgn.data;
+
+        for (y = 0; y < src_rgn.h; y++)
+        {
+            s = src;
+            d = dest;
+
+            for (x = 0; x < src_rgn.w; x++)
+            {
+                d[0] = s[0] ^ 0xFF; // (src_rgn.x + x + src_rgn.y + y) % 256;
+                d[1] = s[1] ^ 0xFF; // s[1];
+                d[2] = s[2] ^ 0xFF; // (- src_rgn.x - x + src_rgn.y + y) % 256;
+
+                if (has_alpha)
+                    d[alpha] = s[alpha];
+
+                s += src_rgn.bpp;
+                d += dest_rgn.bpp;
+            }
+
+            src += src_rgn.rowstride;
+            dest += dest_rgn.rowstride;
+        }
+
+        // Update progress
+        progress += src_rgn.w * src_rgn.h;
+
+        gimp_progress_update ((double) progress / (double) max_progress);
+    }
+
+/*
     // guchar * offset;
     // p_workbuf = g_new (guchar, width * height * bpp);
     guchar * p_workbuf = g_new (guchar, bpp);
@@ -231,6 +279,8 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
         }
         gimp_progress_update ((double) y / (double) height);
     }
+*/
+
 
     // Update progress to 100% compelte
     gimp_progress_update (1.0);
