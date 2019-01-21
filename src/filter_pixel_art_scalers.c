@@ -1,21 +1,4 @@
-/*=======================================================================
-              ROM bin load / save plugin for the GIMP
-                 Copyright 2018 - Others & Nathan Osman (webp plugin base)
-
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>.
-=======================================================================*/
-
+// filter_pixel_art_scalers.c
 
 #include <string.h>
 #include <stdint.h>
@@ -23,17 +6,21 @@
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
 
+//#include "filter_pixel_art_scalers.h"
+#include "filter_dialog.h"
+
+
 
 const char PLUG_IN_PROCEDURE[] = "filter-pixel-art-scalers-proc";
-
-const char BINARY_NAME[]    = "filter-pixel-art-scalers";
-
+const char PLUG_IN_ROLE[]      = "gimp-pixel-art-scalers";
+const char PLUG_IN_BINARY[]    = "filter-pixel-art-scalers";
 #define TILE_CACHE_SIZE 48
-
 
 // Predeclare our entrypoints
 static void query(void);
 static void run(const gchar *, gint, const GimpParam *, gint *, GimpParam **);
+
+
 
 // Declare our plugin entry points
 GimpPlugInInfo PLUG_IN_INFO = {
@@ -44,6 +31,13 @@ GimpPlugInInfo PLUG_IN_INFO = {
 };
 
 /*
+static PixelArtScalerVals cvals =
+{
+  1  // scaler_type
+};
+*/
+
+/*
 // TODO
 static CartoonVals cvals =
 {
@@ -52,6 +46,7 @@ static CartoonVals cvals =
   0.2   // pct_black
 };
 */
+
 
 
 MAIN()
@@ -130,9 +125,8 @@ static void run(const gchar      * name,
       // gimp_get_data (PLUG_IN_PROCEDURE, &cvals);
 
       //  First acquire information with a dialog
-      // TODO
-//      if (! cartoon_dialog (drawable))
-//        return;
+      if (! pixel_art_scalers_dialog (drawable))
+        return;
       break;
 
     case GIMP_RUN_NONINTERACTIVE:
@@ -183,3 +177,5 @@ static void run(const gchar      * name,
 
   gimp_drawable_detach (drawable);
 }
+
+
