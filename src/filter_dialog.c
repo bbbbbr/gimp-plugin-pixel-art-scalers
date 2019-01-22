@@ -159,141 +159,140 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 {
     GimpPixelRgn src_rgn, dest_rgn;
     gint         bpp, has_alpha;
-    gint         x1, y1, x2, y2, width, height;
+    gint         width, height;
     gint         progress, max_progress;
 
-    guchar *src, *s;
-    guchar *dest, *d;
-    gint    red, green, blue, alpha;
+    guchar *src_row, *s;
+    guchar *dest_row, *d;
     gint    x, y;
-    gpointer pr;
+    gint    alpha;
+    gpointer pixel_tile_sub_region;
+
+    guchar       *preview_buffer = NULL;
 
 
-    if (! gimp_drawable_mask_intersect (drawable->drawable_id, &x1, &y1, &width, &height))
-        return;
-
-// TODO: Handle Preview!
-/*
-// Switch to
+    // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
-        gimp_preview_get_position (preview, &x1, &y1);
+        gimp_preview_get_position (preview, &x, &y);
         gimp_preview_get_size (preview, &width, &height);
     }
     else if (! gimp_drawable_mask_intersect (drawable->drawable_id,
-                                             &x1, &y1, &width, &height)) {
+                                             &x, &y, &width, &height)) {
         return;
     }
-*/
+
+    // Get bit depth and alpha mask status
+    bpp = drawable->bpp;
+    has_alpha = gimp_drawable_has_alpha (drawable->drawable_id);
+    alpha = (has_alpha) ? drawable->bpp - 1 : drawable->bpp;
 
     // FALSE, FALSE : region will be used to read the actual drawable datas
+    // Initialize source pixel region with drawable
     gimp_pixel_rgn_init (&src_rgn,
                          drawable,
-                         0,
-                         0,
-                         drawable->width,
-                         drawable->height,
+                         x, y,
+                         width, height,
                          FALSE, FALSE);
 
-    // TRUE,  TRUE  : region will be used to write to the shadow tiles
-    // i.e. make changes that will be written back to source tiles
-    gimp_pixel_rgn_init (&dest_rgn,
-                         drawable,
-                         0,
-                         0,
-                         drawable->width,
-                         drawable->height,
-                         TRUE, TRUE);
+    if (preview) {
+        // Allocate preview buffer
+        preview_buffer = g_new (guchar, width * height * bpp);
+
+        // Register the source pixel tile sub region
+        pixel_tile_sub_region = gimp_pixel_rgns_register (1, &src_rgn);
+    }
+    else {
+        // TRUE,  TRUE  : region will be used to write to the shadow tiles
+        //                i.e. make changes that will be written back to source tiles
+        // Initialize dest pixel region with drawable
+        gimp_pixel_rgn_init (&dest_rgn,
+                             drawable,
+                             x, y,
+                             width, height,
+                             TRUE, TRUE);
+
+        // Register the source and destination pixel regions
+        pixel_tile_sub_region = gimp_pixel_rgns_register (2, &src_rgn, &dest_rgn);
+    }
 
 
     // Initialize progress indicator
     progress = 0;
     max_progress = width * height;
 
-    // Get bit depth and alpha mask status
-    bpp = drawable->bpp;
-    has_alpha = gimp_drawable_has_alpha (drawable->drawable_id);
 
-
-
-    // Process the image
-
-    for (pr = gimp_pixel_rgns_register (2, &src_rgn, &dest_rgn);
-         pr != NULL;
-         pr = gimp_pixel_rgns_process (pr))
+  // Process the image
+    while (pixel_tile_sub_region)
     {
-        src = src_rgn.data;
-        dest = dest_rgn.data;
+        // Set source pointer to start of tile sub-region
+        src_row = src_rgn.data;
 
-        for (y = 0; y < src_rgn.h; y++)
-        {
-            s = src;
-            d = dest;
+        if (preview) {
+            // Set dest pointer using offset to matching sub-region within it's full size region buffer
+            dest_row = preview_buffer  + ((src_rgn.y - y) * width + (src_rgn.x - x)) * bpp;
+        }
+        else {
+            // Set dest pointer to start of matching tile sub-region
+            dest_row = dest_rgn.data;
+        }
 
-            for (x = 0; x < src_rgn.w; x++)
-            {
-                d[0] = s[0] ^ 0xFF; // (src_rgn.x + x + src_rgn.y + y) % 256;
-                d[1] = s[1] ^ 0xFF; // s[1];
-                d[2] = s[2] ^ 0xFF; // (- src_rgn.x - x + src_rgn.y + y) % 256;
+
+        // Loop through each row, and then each pixel for the rows
+        for (int y1 = 0; y1 < src_rgn.h; y1++) {
+
+            // Set/Reset pixel pointers to start of upcoming row
+            s = src_row;
+            d = dest_row;
+
+            for (int x1 = 0; x1 < src_rgn.w; x1++) {
+
+                d[0] = s[0] ^ 0xFF;
+                d[1] = s[1] ^ 0xFF;
+                d[2] = s[2] ^ 0xFF;
 
                 if (has_alpha)
                     d[alpha] = s[alpha];
 
                 s += src_rgn.bpp;
-                d += dest_rgn.bpp;
+
+                if (preview) d += bpp;
+                else         d += dest_rgn.bpp;
             }
 
-            src += src_rgn.rowstride;
-            dest += dest_rgn.rowstride;
+            // Advance pixel row pointers to start of upcoming row
+            src_row += src_rgn.rowstride;
+
+            if (preview) dest_row += width * bpp;
+            else         dest_row += dest_rgn.rowstride;
         }
 
-        // Update progress
-        progress += src_rgn.w * src_rgn.h;
 
-        gimp_progress_update ((double) progress / (double) max_progress);
-    }
-
-/*
-    // guchar * offset;
-    // p_workbuf = g_new (guchar, width * height * bpp);
-    guchar * p_workbuf = g_new (guchar, bpp);
-
-    for (gint y = 0; y < height; y++) {
-        for (gint x = 0; x < width; x++) {
-
-            // Optimize... use get_col or get_rect
-            gimp_pixel_rgn_get_pixel (&src_rgn,
-                                      p_workbuf,
-                                      x, y);
-
-            // XOR
-            *(p_workbuf    ) ^= 0xFF;
-            *(p_workbuf + 1) ^= 0xFF;
-            *(p_workbuf + 2) ^= 0xFF;
-
-            // offset = (x * y * bpp);
-            //*(p_workbuf + offset) ^= 0xFF;
-
-            gimp_pixel_rgn_set_pixel (&dest_rgn,
-                                      p_workbuf,
-                                      x, y);
+        // Only update the progress bar status if it's not a preview
+        if (!preview) {
+            progress += src_rgn.w * src_rgn.h;
+            gimp_progress_update ((double) progress / (double) max_progress);
         }
-        gimp_progress_update ((double) y / (double) height);
+
+        // Iterate to next pixel tile sub-region
+        pixel_tile_sub_region = gimp_pixel_rgns_process (pixel_tile_sub_region);
     }
-*/
 
 
-    // Update progress to 100% compelte
-    gimp_progress_update (1.0);
+    // Filter is done, apply the update
+    if (preview) {
+        gimp_preview_draw_buffer (preview, preview_buffer, width * bpp);
+        g_free (preview_buffer);
+    }
+    else
+    {
+        // Update progress to 100% complete
+        gimp_progress_update (1.0);
 
-    // Apply the changes to the image
-    gimp_drawable_flush (drawable);
-    gimp_drawable_merge_shadow (drawable->drawable_id, TRUE);
-    gimp_drawable_update (drawable->drawable_id, x1, y1, width, height);
-
-    // TODO?
-    // See: https://www.gimp.org/docs/scheme_plugin/imagedata.html
-    //gimp_displays_flush();
-    //gimp_drawable_detach(drawable);
+        // Apply the changes to the image (merge shadow, update drawable)
+        gimp_drawable_flush (drawable);
+        gimp_drawable_merge_shadow (drawable->drawable_id, TRUE);
+        gimp_drawable_update (drawable->drawable_id, x, y, width, height);
+    }
 }
 
 

@@ -15,6 +15,11 @@ const char PLUG_IN_PROCEDURE[] = "filter-pixel-art-scalers-proc";
 const char PLUG_IN_ROLE[]      = "gimp-pixel-art-scalers";
 const char PLUG_IN_BINARY[]    = "filter-pixel-art-scalers";
 #define TILE_CACHE_SIZE 48
+// TODO:
+// a bug in the third-party plug-in. It assumes that gimp_tile_width () and gimp_tile_height () return 64, but evidently tiles changed size in gimp-2.10 and so third-party plug-ins have to be adjusted.
+// In this case the problem is in separate-core.c, line 545 should have been:
+//  sc->cmyktemp = g_new (guchar, gimp_tile_width () * gimp_tile_height () * 4);
+
 
 // Predeclare our entrypoints
 static void query(void);
@@ -79,7 +84,7 @@ static void query(void)
                             args,
                             NULL);
 
-  gimp_plugin_menu_register (PLUG_IN_PROCEDURE, "<Image>/Filters/Render");
+    gimp_plugin_menu_register (PLUG_IN_PROCEDURE, "<Image>/Filters/Render");
 }
 
 
@@ -153,8 +158,8 @@ static void run(const gchar      * name,
           gimp_progress_init ("Pixel-Art-Scalers");
 
 
-// TODO process image here
-//          cartoon (drawable, NULL);
+          // Apply image filter (user confirmed in preview dialog)
+          pixel_art_scalers_run(drawable, NULL);
 
           if (run_mode != GIMP_RUN_NONINTERACTIVE)
             gimp_displays_flush ();
