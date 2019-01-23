@@ -134,19 +134,10 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
 /*
 // TODO
- * Cartoon algorithm
+ *  algorithm
  * -----------------
- * Mask radius = radius of pixel neighborhood for intensity comparison
- * Threshold   = relative intensity difference which will result in darkening
- * Ramp        = amount of relative intensity difference before total black
- * Blur radius = mask radius / 3.0
  *
  * Algorithm:
- * For each pixel, calculate pixel intensity value to be: avg (blur radius)
- * relative diff = pixel intensity / avg (mask radius)
- * If relative diff < Threshold
- *   intensity mult = (Ramp - MIN (Ramp, (Threshold - relative diff))) / Ramp
- *   pixel intensity *= intensity mult
  */
 
 
@@ -155,6 +146,9 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 //                    gint          pixelheight,
 //                    gint          tile_width,
 //                    gint          tile_height)
+//
+// TODO: This would be less brittle and easier to understand if
+//       preview vs. apply was either seperated out or abstracted.
 void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 {
     GimpPixelRgn src_rgn, dest_rgn;
@@ -162,13 +156,14 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     gint         width, height;
     gint         progress, max_progress;
 
-    guchar *src_row, *s;
-    guchar *dest_row, *d;
-    gint    x, y;
-    gint    alpha;
-    gpointer pixel_tile_sub_region;
+    guchar       *src_row, *s;
+    guchar       *dest_row, *d;
+    gint         x, y;
+    gint         alpha;
+    gpointer     pixel_tile_sub_region;
 
-    guchar       *preview_buffer = NULL;
+    guchar       * p_workbuf = NULL;
+    guchar       * p_pix = NULL;
 
 
     // Get the working image area for either the preview sub-window or the entire image
@@ -186,6 +181,9 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     has_alpha = gimp_drawable_has_alpha (drawable->drawable_id);
     alpha = (has_alpha) ? drawable->bpp - 1 : drawable->bpp;
 
+    // Allocate a working buffer to copy the source image into
+    p_workbuf = g_new (guchar, width * height * bpp);
+
     // FALSE, FALSE : region will be used to read the actual drawable datas
     // Initialize source pixel region with drawable
     gimp_pixel_rgn_init (&src_rgn,
@@ -194,14 +192,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
                          width, height,
                          FALSE, FALSE);
 
-    if (preview) {
-        // Allocate preview buffer
-        preview_buffer = g_new (guchar, width * height * bpp);
-
-        // Register the source pixel tile sub region
-        pixel_tile_sub_region = gimp_pixel_rgns_register (1, &src_rgn);
-    }
-    else {
+    if (!preview) {
         // TRUE,  TRUE  : region will be used to write to the shadow tiles
         //                i.e. make changes that will be written back to source tiles
         // Initialize dest pixel region with drawable
@@ -210,89 +201,58 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
                              x, y,
                              width, height,
                              TRUE, TRUE);
-
-        // Register the source and destination pixel regions
-        pixel_tile_sub_region = gimp_pixel_rgns_register (2, &src_rgn, &dest_rgn);
     }
 
 
-    // Initialize progress indicator
-    progress = 0;
-    max_progress = width * height;
+    // Copy source image to working buffer
+    gimp_pixel_rgn_get_rect (&src_rgn,
+                              p_workbuf,
+                              x, y, width, height);
 
 
-  // Process the image
-    while (pixel_tile_sub_region)
-    {
-        // Set source pointer to start of tile sub-region
-        src_row = src_rgn.data;
+    // Use a temp pointer to operate on the working buffer
+    p_pix = p_workbuf;
 
-        if (preview) {
-            // Set dest pointer using offset to matching sub-region within it's full size region buffer
-            dest_row = preview_buffer  + ((src_rgn.y - y) * width + (src_rgn.x - x)) * bpp;
+    // Iterate over the working buffer and modify it
+    for (gint y = 0; y < height; y++) {
+        for (gint x = 0; x < width; x++) {
+              *(p_pix++) ^= 0xFF; //[0]
+              *(p_pix++) ^= 0xFF; //[1]
+              *(p_pix++) ^= 0xFF; //[2]
+
+              if (has_alpha) //
+                  p_pix++;
         }
-        else {
-            // Set dest pointer to start of matching tile sub-region
-            dest_row = dest_rgn.data;
-        }
-
-
-        // Loop through each row, and then each pixel for the rows
-        for (int y1 = 0; y1 < src_rgn.h; y1++) {
-
-            // Set/Reset pixel pointers to start of upcoming row
-            s = src_row;
-            d = dest_row;
-
-            for (int x1 = 0; x1 < src_rgn.w; x1++) {
-
-                d[0] = s[0] ^ 0xFF;
-                d[1] = s[1] ^ 0xFF;
-                d[2] = s[2] ^ 0xFF;
-
-                if (has_alpha)
-                    d[alpha] = s[alpha];
-
-                s += src_rgn.bpp;
-
-                if (preview) d += bpp;
-                else         d += dest_rgn.bpp;
-            }
-
-            // Advance pixel row pointers to start of upcoming row
-            src_row += src_rgn.rowstride;
-
-            if (preview) dest_row += width * bpp;
-            else         dest_row += dest_rgn.rowstride;
-        }
-
 
         // Only update the progress bar status if it's not a preview
         if (!preview) {
-            progress += src_rgn.w * src_rgn.h;
-            gimp_progress_update ((double) progress / (double) max_progress);
+            gimp_progress_update ((double) y / (double) height);
         }
-
-        // Iterate to next pixel tile sub-region
-        pixel_tile_sub_region = gimp_pixel_rgns_process (pixel_tile_sub_region);
     }
 
 
     // Filter is done, apply the update
     if (preview) {
-        gimp_preview_draw_buffer (preview, preview_buffer, width * bpp);
-        g_free (preview_buffer);
+        gimp_preview_draw_buffer (preview, p_workbuf, width * bpp);
     }
     else
     {
         // Update progress to 100% complete
         gimp_progress_update (1.0);
 
+        // Copy working buffer to the shadow image
+        gimp_pixel_rgn_set_rect (&dest_rgn,
+                                  p_workbuf,
+                                  x, y, width, height);
+
         // Apply the changes to the image (merge shadow, update drawable)
         gimp_drawable_flush (drawable);
         gimp_drawable_merge_shadow (drawable->drawable_id, TRUE);
         gimp_drawable_update (drawable->drawable_id, x, y, width, height);
     }
+
+    // Free the working buffer
+    g_free (p_workbuf);
 }
 
 
