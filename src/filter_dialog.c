@@ -9,10 +9,15 @@
 
 #include "filter_dialog.h"
 
+#include <stdint.h>
+#include "hqx.h"
+
+
 extern const char PLUG_IN_PROCEDURE[];
 extern const char PLUG_IN_ROLE[];
 extern const char PLUG_IN_BINARY[];
 
+static void filter_apply (uint32_t *, uint32_t *, int, int, int);
 
 /*******************************************************/
 /*                    Dialog                           */
@@ -156,13 +161,14 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     gint         width, height;
     gint         progress, max_progress;
 
-    guchar       *src_row, *s;
-    guchar       *dest_row, *d;
+    guchar       * src_row,  * s;
+    guchar       * dest_row, * d;
     gint         x, y;
     gint         alpha;
     gpointer     pixel_tile_sub_region;
 
-    guchar       * p_workbuf = NULL;
+    uint32_t     * p_workbuf = NULL;
+    uint32_t     * p_outputbuf = NULL;
     guchar       * p_pix = NULL;
 
 
@@ -182,7 +188,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     alpha = (has_alpha) ? drawable->bpp - 1 : drawable->bpp;
 
     // Allocate a working buffer to copy the source image into
-    p_workbuf = g_new (guchar, width * height * bpp);
+    p_workbuf = (uint32_t *) g_new (guchar, width * height * bpp);
 
     // FALSE, FALSE : region will be used to read the actual drawable datas
     // Initialize source pixel region with drawable
@@ -206,12 +212,56 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
     // Copy source image to working buffer
     gimp_pixel_rgn_get_rect (&src_rgn,
-                              p_workbuf,
+                              (guchar *) p_workbuf,
                               x, y, width, height);
 
 
+
+/// ---------
+
+    guint scale_factor = 4;
+
+    // Allocate output buffer for the results
+    // guchar   : unsigned char ( 8 bits)
+    // guint32  : unsigned int  (32 bits)
+    // uint32_t : unsigned int  (32 bits)
+    // p_outputbuf = (uint32_t *) malloc(width * scale_factor * height * scale_factor * sizeof(uint32_t));
+    p_outputbuf = (uint32_t *) g_new (guint, width * scale_factor * height * scale_factor * sizeof(uint32_t));
+
+    if (p_outputbuf) {
+
+        // TODO: Careful! Making assumptions about p_workbuf : bpp = 4 / uint32_t here
+        filter_apply (p_workbuf,
+                      p_outputbuf,
+                      (int) width,
+                      (int) height,
+                      (int) scale_factor);
+
+
+         // Copy the output back on top of the working/preview buffer
+        //   This only copies a windowed subset of the output (size matching input buffer pre-scaled)
+        guchar       * p_w = (guchar *) p_workbuf;
+        guchar       * p_o = (guchar *) p_outputbuf;
+        for (gint y = 0; y < height; y++) {
+                   // TODO: fix assumptions about bpp/etc here - NOTE note using BPP, since increment is in uint32_ts
+                   memcpy(p_w, p_o, width * bpp);
+                   p_w +=  width * bpp;                // increment row for dest buffer
+                   p_o +=  width * scale_factor * bpp; // increment row for source buffer
+                  // if (has_alpha) //
+        }
+
+
+        // memcpy(p_workbuf, p_outputbuf, width * height * bpp);
+
+
+
+
+        g_free(p_outputbuf);
+    }
+
+/*
     // Use a temp pointer to operate on the working buffer
-    p_pix = p_workbuf;
+    p_pix = (guchar *) p_workbuf;
 
     // Iterate over the working buffer and modify it
     for (gint y = 0; y < height; y++) {
@@ -229,11 +279,11 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
             gimp_progress_update ((double) y / (double) height);
         }
     }
-
+*/
 
     // Filter is done, apply the update
     if (preview) {
-        gimp_preview_draw_buffer (preview, p_workbuf, width * bpp);
+        gimp_preview_draw_buffer (preview, (guchar *) p_workbuf, width * bpp);
     }
     else
     {
@@ -242,7 +292,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
         // Copy working buffer to the shadow image
         gimp_pixel_rgn_set_rect (&dest_rgn,
-                                  p_workbuf,
+                                  (guchar *) p_workbuf,
                                   x, y, width, height);
 
         // Apply the changes to the image (merge shadow, update drawable)
@@ -256,4 +306,14 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 }
 
 
+
+static void filter_apply (uint32_t * p_srcbuf, uint32_t * p_destbuf, int width, int height, int scale_factor) {
+
+    hqxInit();
+
+    hq4x_32( (uint32_t*) p_srcbuf,
+             (uint32_t*) p_destbuf,
+                   (int) width,
+                  (int) height);
+}
 
