@@ -19,7 +19,6 @@ extern const char PLUG_IN_ROLE[];
 extern const char PLUG_IN_BINARY[];
 
 static void filter_apply (int, uint32_t *, uint32_t *, int, int);
-static void copy_scaled_to_unscaled(guchar *, guchar *, guint, guint, guint, guint);
 static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
 
 enum scaler_list {
@@ -251,7 +250,10 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
 
 
-    // BEGIN SCALER
+    // ====== BEGIN SCALER ======
+    // TODO: move to function
+    // TODO: cache output to speed up redraws when output window gets panned around
+
     guint scaler_mode = SCALER_HQ4X;
     guint scale_factor = scalers[scaler_mode].scale_factor;
 
@@ -268,6 +270,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
                       (int) width, (int) height);
     }
 
+    // ====== END SCALER ======
 
     // Filter is done, apply the update
     if (preview) {
@@ -304,24 +307,6 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
         g_free(p_scaledbuf);
 }
 
-
-
-// TODO: delete me
-static void copy_scaled_to_unscaled(guchar * p_srcbuf, guchar * p_scaledbuf, guint width, guint height, guint bpp, guint scale_factor) {
-
-    // Copy the output back on top of the working/preview buffer
-    //   This only copies a windowed subset of the output (size matching input buffer pre-scaled)
-    for (gint y = 0; y < height; y++) {
-
-         // TODO: fix assumptions about bpp/etc here - NOTE note using BPP, since increment is in uint32_ts
-         // Because I can never remember:  memcopy direction (p1, <-- p2)
-         memcpy(p_srcbuf, p_scaledbuf, width * bpp);
-         p_srcbuf +=  width * bpp;                // increment row for dest buffer
-         p_scaledbuf +=  width * scale_factor * bpp; // increment row for source buffer
-
-        // TODO: if (has_alpha)
-    }
-}
 
 
 
