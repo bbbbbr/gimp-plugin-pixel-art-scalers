@@ -20,6 +20,7 @@ extern const char PLUG_IN_BINARY[];
 
 static void filter_apply (int, uint32_t *, uint32_t *, int, int);
 static void copy_scaled_to_unscaled(guchar *, guchar *, guint, guint, guint, guint);
+static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
 
 enum scaler_list {
     SCALER_HQ2X,
@@ -202,7 +203,7 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
 void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 {
-    GimpPixelRgn src_rgn, dest_rgn;
+    GimpPixelRgn src_rgn;
     gint         bpp, has_alpha;
     gint         width, height;
 
@@ -271,6 +272,8 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     // Filter is done, apply the update
     if (preview) {
 
+        // WARNING: requires access to a glboal var
+
         // RGBA 4pp assumption
         // Draw scaled image onto preview area
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
@@ -286,33 +289,12 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     }
     else
     {
-
-        // TODO: Fix assumption that image has alpha layer (BytesPerPixel = 4)
-        // TRUE,  TRUE  : region will be used to write to the shadow tiles
-        //                i.e. make changes that will be written back to source tiles
-        // Initialize dest pixel region with drawable
-        gimp_pixel_rgn_init (&dest_rgn,
-                             drawable,
-                             x, y,
-                             width, height,
-                             TRUE, TRUE);
-
-        // TODO: REplace this with resizing canvas and pass
-        copy_scaled_to_unscaled((guchar *) p_srcbuf,
-                                (guchar *)p_scaledbuf,
-                                width, height,
-                                bpp, scale_factor);
+        // Apply image result with full resize
+        resize_image_and_apply_changes(drawable,
+                                       (guchar *)p_scaledbuf,
+                                       scale_factor);
 
 
-        // Copy working buffer to the shadow image
-        gimp_pixel_rgn_set_rect (&dest_rgn,
-                                  (guchar *) p_srcbuf,
-                                  x, y, width, height);
-
-        // Apply the changes to the image (merge shadow, update drawable)
-        gimp_drawable_flush (drawable);
-        gimp_drawable_merge_shadow (drawable->drawable_id, TRUE);
-        gimp_drawable_update (drawable->drawable_id, x, y, width, height);
     }
 
     // Free the working buffer
@@ -324,6 +306,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
 
 
+// TODO: delete me
 static void copy_scaled_to_unscaled(guchar * p_srcbuf, guchar * p_scaledbuf, guint width, guint height, guint bpp, guint scale_factor) {
 
     // Copy the output back on top of the working/preview buffer
@@ -339,6 +322,70 @@ static void copy_scaled_to_unscaled(guchar * p_srcbuf, guchar * p_scaledbuf, gui
         // TODO: if (has_alpha)
     }
 }
+
+
+
+// Resizes image and then draws the newly scaled output onto it
+// Params:
+// * GimpDrawable  : from source image
+// * guchar * buffer : scaled output
+// * guint    scale_factor : image scale multiplier
+static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbuf, guint scale_factor)
+{
+    // TODO: Fix assumption that image has alpha layer (BytesPerPixel = 4)
+    GimpPixelRgn src_rgn, dest_rgn;
+    guint x,y, width, height;
+
+    if (! gimp_drawable_mask_intersect (drawable->drawable_id,
+                                         &x, &y, &width, &height))
+        return;
+
+
+    // Resize image
+    if (gimp_image_resize(gimp_drawable_get_image(drawable->drawable_id),
+                          width * scale_factor,
+                          height * scale_factor,
+                          0,0))
+    {
+
+        // Resize the current layer to match the resized image
+        gimp_layer_resize_to_image_size( gimp_image_get_active_layer(
+                                           gimp_drawable_get_image(drawable->drawable_id) ) );
+
+
+        // Get a new drawable from the resized layer/image
+        GimpDrawable *resized_drawable = gimp_drawable_get(
+                                           gimp_image_get_active_drawable(
+                                             gimp_drawable_get_image(drawable->drawable_id) ) );
+
+
+        // Initialize destination pixel region with drawable
+        // TRUE,  TRUE  : region will be used to write to the shadow tiles
+        //                i.e. make changes that will be written back to source tiles
+        gimp_pixel_rgn_init (&dest_rgn,
+                             resized_drawable,
+                             0, 0,
+                             width * scale_factor,
+                             height * scale_factor,
+                             TRUE, TRUE);
+
+        // Copy the scaled buffer to the shadow image
+        gimp_pixel_rgn_set_rect (&dest_rgn,
+                                 (guchar *) p_scaledbuf,
+                                 0,0,
+                                 width * scale_factor,
+                                 height * scale_factor);
+
+        // Apply the changes to the image (merge shadow, update drawable)
+        gimp_drawable_flush (resized_drawable);
+        gimp_drawable_merge_shadow (resized_drawable->drawable_id, TRUE);
+        gimp_drawable_update (resized_drawable->drawable_id, 0, 0, width * scale_factor, height * scale_factor);
+
+        // Free the extra resized drawable
+        gimp_drawable_detach (resized_drawable);
+    }
+}
+
 
 
 static void filter_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_destbuf, int width, int height) {
