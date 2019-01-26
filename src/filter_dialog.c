@@ -1,3 +1,4 @@
+
 //#include "config.h"
 //#include <string.h>
 
@@ -50,14 +51,20 @@ void scalers_init() {
     scalers[SCALER_HQ4X].scale_factor    = 4;
  }
 
+
 /*******************************************************/
 /*                    Dialog                           */
 /*******************************************************/
+
+// TODO: there are probably better ways to do this than a global var
+static   GtkWidget *preview_scaled;
+
 
 gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 {
   GtkWidget *dialog;
   GtkWidget *main_vbox;
+  GtkWidget *preview_hbox;
   GtkWidget *preview;
   GtkWidget *table;
   GtkObject *scale_data;
@@ -81,20 +88,43 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
   gimp_window_set_transient (GTK_WINDOW (dialog));
 
-  main_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 12);
-  gtk_container_set_border_width (GTK_CONTAINER (main_vbox), 12);
+
+  // Create a main vertical box for the preview
+  main_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+  gtk_container_set_border_width (GTK_CONTAINER (main_vbox), 6);
   gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (dialog))),
                       main_vbox, TRUE, TRUE, 0);
   gtk_widget_show (main_vbox);
 
-  preview = gimp_drawable_preview_new (drawable, NULL);
-  gtk_box_pack_start (GTK_BOX (main_vbox), preview, TRUE, TRUE, 0);
-  gtk_widget_show (preview);
 
+  // Create a side-by-side sub-box for the pair of preview windows
+  preview_hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+  gtk_container_set_border_width (GTK_CONTAINER (preview_hbox), 6);
+  gtk_box_pack_start (GTK_BOX (main_vbox),
+                      preview_hbox, TRUE, TRUE, 0);
+  gtk_widget_show (preview_hbox);
+
+
+  preview = gimp_drawable_preview_new (drawable, NULL);
+
+
+  // Add source image preview area, set it to not expand if window grows
+  gtk_box_pack_start (GTK_BOX (preview_hbox), preview, FALSE, TRUE, 0);
+  gtk_widget_show (preview);
+  // Wire up preview redraw to call the pixel scaler filter
   g_signal_connect_swapped (preview,
                             "invalidated",
                             G_CALLBACK (pixel_art_scalers_run),
                             drawable);
+
+
+  // Add a scaled preview area
+  preview_scaled = gimp_preview_area_new();
+  // ---- // gtk_widget_set_size_request (preview_scaled, PREVIEW_SIZE, PREVIEW_SIZE);
+   gtk_box_pack_start (GTK_BOX (preview_hbox), preview_scaled, TRUE, TRUE, 0);
+   gtk_widget_show (preview_scaled);
+
+
 
   table = gtk_table_new (3, 3, FALSE);
   gtk_table_set_col_spacings (GTK_TABLE (table), 6);
@@ -149,7 +179,9 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
   gtk_widget_show (dialog);
 
+
   run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);
+
 
   gtk_widget_destroy (dialog);
 
@@ -164,27 +196,10 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 /*                    APPLY SCALER                     */
 /*******************************************************/
 
-
-
-
-
-/*
-// TODO
- *  algorithm
- * -----------------
- *
- * Algorithm:
- */
-
-
-// static void pixel_art_scalers_run (GimpDrawable *drawable)
-//                    gint          pixelwidth,
-//                    gint          pixelheight,
-//                    gint          tile_width,
-//                    gint          tile_height)
-//
 // TODO: This would be less brittle and easier to understand if
 //       preview vs. apply was either seperated out or abstracted.
+
+
 void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 {
     GimpPixelRgn src_rgn, dest_rgn;
@@ -227,20 +242,6 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
                          width, height,
                          FALSE, FALSE);
 
-    if (!preview) {
-
-        // TODO: Fix assumption that image has alpha layer (BytesPerPixel = 4)
-
-        // TRUE,  TRUE  : region will be used to write to the shadow tiles
-        //                i.e. make changes that will be written back to source tiles
-        // Initialize dest pixel region with drawable
-        gimp_pixel_rgn_init (&dest_rgn,
-                             drawable,
-                             x, y,
-                             width, height,
-                             TRUE, TRUE);
-    }
-
 
     // Copy source image to working buffer
     gimp_pixel_rgn_get_rect (&src_rgn,
@@ -250,15 +251,11 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
 
     // BEGIN SCALER
-
     guint scaler_mode = SCALER_HQ4X;
-
     guint scale_factor = scalers[scaler_mode].scale_factor;
 
     // Allocate output buffer for the results
-    // guchar   : unsigned char ( 8 bits)
-    // guint32  : unsigned int  (32 bits)
-    // uint32_t : unsigned int  (32 bits)
+    // guchar = unsigned 8 bits, guint32 = unsigned 32 bits, uint32_t = unsigned 32 bits
     p_scaledbuf = (uint32_t *) g_new (guint, width * scale_factor * height * scale_factor * sizeof(uint32_t));
 
     if (p_scaledbuf) {
@@ -268,22 +265,45 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
                       p_srcbuf,
                       p_scaledbuf,
                       (int) width, (int) height);
+    }
 
 
+    // Filter is done, apply the update
+    if (preview) {
+
+        // RGBA 4pp assumption
+        // Draw scaled image onto preview area
+        gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
+                                0, 0,
+                                width * scale_factor,
+                                height * scale_factor,
+                                GIMP_RGBA_IMAGE,
+                                (guchar *) p_scaledbuf,
+                                width * scale_factor * bpp);
+
+        // Resize scaled preview area to full buffer size
+        gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
+    }
+    else
+    {
+
+        // TODO: Fix assumption that image has alpha layer (BytesPerPixel = 4)
+        // TRUE,  TRUE  : region will be used to write to the shadow tiles
+        //                i.e. make changes that will be written back to source tiles
+        // Initialize dest pixel region with drawable
+        gimp_pixel_rgn_init (&dest_rgn,
+                             drawable,
+                             x, y,
+                             width, height,
+                             TRUE, TRUE);
+
+        // TODO: REplace this with resizing canvas and pass
         copy_scaled_to_unscaled((guchar *) p_srcbuf,
                                 (guchar *)p_scaledbuf,
                                 width, height,
                                 bpp, scale_factor);
 
-        g_free(p_scaledbuf);
-    }
 
-    // Filter is done, apply the update
-    if (preview) {
-        gimp_preview_draw_buffer (preview, (guchar *) p_srcbuf, width * bpp);
-    }
-    else
-    {
         // Copy working buffer to the shadow image
         gimp_pixel_rgn_set_rect (&dest_rgn,
                                   (guchar *) p_srcbuf,
@@ -297,7 +317,11 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
     // Free the working buffer
     g_free (p_srcbuf);
+
+    if (p_scaledbuf)
+        g_free(p_scaledbuf);
 }
+
 
 
 static void copy_scaled_to_unscaled(guchar * p_srcbuf, guchar * p_scaledbuf, guint width, guint height, guint bpp, guint scale_factor) {

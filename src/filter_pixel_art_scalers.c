@@ -14,6 +14,7 @@
 const char PLUG_IN_PROCEDURE[] = "filter-pixel-art-scalers-proc";
 const char PLUG_IN_ROLE[]      = "gimp-pixel-art-scalers";
 const char PLUG_IN_BINARY[]    = "filter-pixel-art-scalers";
+
 #define TILE_CACHE_SIZE 48
 // TODO:
 // a bug in the third-party plug-in. It assumes that gimp_tile_width () and gimp_tile_height () return 64, but evidently tiles changed size in gimp-2.10 and so third-party plug-ins have to be adjusted.
