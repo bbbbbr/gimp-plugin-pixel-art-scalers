@@ -20,9 +20,10 @@ extern const char PLUG_IN_BINARY[];
 
 static void filter_apply (int, uint32_t *, uint32_t *, int, int);
 static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
+static void on_combo_scaler_mode_changed (GtkComboBox *, gpointer);
 
 enum scaler_list {
-    SCALER_HQ2X,
+    SCALER_HQ2X = 0,
     SCALER_HQ3X,
     SCALER_HQ4X,
     SCALER_ENUM_LAST
@@ -31,10 +32,12 @@ enum scaler_list {
 typedef struct {
     void (*scaler_function)(uint32_t*, uint32_t*, int, int);
     int  scale_factor;
+    char scaler_name[20];
 } scaler_info;
 
-scaler_info scalers[SCALER_ENUM_LAST];
+static scaler_info scalers[SCALER_ENUM_LAST];
 
+static gint scaler_mode;
 
 void scalers_init() {
 
@@ -43,21 +46,31 @@ void scalers_init() {
 
     scalers[SCALER_HQ2X].scaler_function = &hq2x_32;
     scalers[SCALER_HQ2X].scale_factor    = 2;
+    sprintf(scalers[SCALER_HQ2X].scaler_name, "HQ 2x");
 
     scalers[SCALER_HQ3X].scaler_function = &hq3x_32;
     scalers[SCALER_HQ3X].scale_factor    = 3;
+    sprintf(scalers[SCALER_HQ3X].scaler_name, "HQ 3x");
 
     scalers[SCALER_HQ4X].scaler_function = &hq4x_32;
     scalers[SCALER_HQ4X].scale_factor    = 4;
+    sprintf(scalers[SCALER_HQ4X].scaler_name, "HQ 4x");
+
+    // Now set the default scaler
+    // TODO: accept last values for plugin so it remembers
+    scaler_mode = SCALER_HQ2X;
  }
+
+
+// TODO: there are probably better ways to do this than a global var
+static   GtkWidget *preview_scaled;
+
+
 
 
 /*******************************************************/
 /*                    Dialog                           */
 /*******************************************************/
-
-// TODO: there are probably better ways to do this than a global var
-static   GtkWidget *preview_scaled;
 
 
 gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
@@ -67,8 +80,13 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   GtkWidget *preview_hbox;
   GtkWidget *preview;
   GtkWidget *table;
+  GtkWidget *combo_scaler_mode;
   GtkObject *scale_data;
   gboolean   run;
+
+
+    // Initialize the scalers
+    scalers_init();
 
   gimp_ui_init (PLUG_IN_BINARY, FALSE);
 
@@ -121,64 +139,37 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   // Add a scaled preview area
   preview_scaled = gimp_preview_area_new();
   // ---- // gtk_widget_set_size_request (preview_scaled, PREVIEW_SIZE, PREVIEW_SIZE);
-   gtk_box_pack_start (GTK_BOX (preview_hbox), preview_scaled, TRUE, TRUE, 0);
-   gtk_widget_show (preview_scaled);
+  gtk_box_pack_start (GTK_BOX (preview_hbox), preview_scaled, TRUE, TRUE, 0);
+  gtk_widget_show (preview_scaled);
 
 
 
-  table = gtk_table_new (3, 3, FALSE);
-  gtk_table_set_col_spacings (GTK_TABLE (table), 6);
-  gtk_table_set_row_spacings (GTK_TABLE (table), 6);
-  gtk_box_pack_start (GTK_BOX (main_vbox), table, FALSE, FALSE, 0);
-  gtk_widget_show (table);
+    // ADD: Combo box for -> SCALER MODE
+    combo_scaler_mode = gtk_combo_box_text_new ();
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[SCALER_HQ2X].scaler_name);
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[SCALER_HQ3X].scaler_name);
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[SCALER_HQ4X].scaler_name);
+
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_scaler_mode), SCALER_HQ2X);
+
+    // Attach to table and show
+    gtk_box_pack_start (GTK_BOX (main_vbox), combo_scaler_mode, FALSE, FALSE, 0);
+    gtk_widget_show (combo_scaler_mode);
+
+    // Connect the changed signal to update the scaler mode and then trigger a preview
+    g_signal_connect (combo_scaler_mode,
+                      "changed",
+                      G_CALLBACK (on_combo_scaler_mode_changed),
+                      &scaler_mode);
+
+    g_signal_connect_swapped (combo_scaler_mode,
+                              "changed",
+                              G_CALLBACK (gimp_preview_invalidate),
+                              preview);
 
 
-/*
-  // MASK RADIUS CONTROL / cvals.mask_radius
-  //
-  // Creates a GtkLabel, a GtkHScale and a GtkSpinButton
-  // and attaches them to a 3-column GtkTable
-  scale_data = gimp_scale_entry_new (GTK_TABLE (table), 0, 0,
-                                     _("_Mask radius:"), 100, 5,
-                                     cvals.mask_radius, 1.0, 50.0, 1, 5.0, 2,
-                                     TRUE, 0, 0,
-                                     NULL, NULL);
-
-  // Connect updates from the control to the preview
-  g_signal_connect (scale_data,
-                    "value-changed",
-                    G_CALLBACK (gimp_double_adjustment_update),
-                    &cvals.mask_radius);
-
-  g_signal_connect_swapped (scale_data,
-                            "value-changed",
-                            G_CALLBACK (gimp_preview_invalidate),
-                            preview);
-
-  // MASK RADIUS CONTROL / cvals.pct_black
-  //
-  // Creates a GtkLabel, a GtkHScale and a GtkSpinButton
-  // and attaches them to a 3-column GtkTable.
-  scale_data = gimp_scale_entry_new (GTK_TABLE (table), 0, 1,
-                                     _("_Percent black:"), 50, 5,
-                                     cvals.pct_black, 0.0, 1.0, 0.01, 0.1, 3,
-                                     TRUE, 0, 0,
-                                     NULL, NULL);
-
-  // Connect updates from the control to the preview
-  g_signal_connect (scale_data,
-                    "value-changed",
-                    G_CALLBACK (gimp_double_adjustment_update),
-                    &cvals.pct_black);
-
-  g_signal_connect_swapped (scale_data,
-                            "value-changed",
-                            G_CALLBACK (gimp_preview_invalidate),
-                            preview);
-*/
 
   gtk_widget_show (dialog);
-
 
   run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);
 
@@ -187,6 +178,26 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
   return run;
 }
+
+
+
+// Handler : "changed" for SCALER MODE combo box
+// callback_data not used currently
+static void on_combo_scaler_mode_changed (GtkComboBox *combo, gpointer callback_data)
+{
+
+    // TODO: de
+    gchar *selected_string = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(combo) );
+    gint i;
+
+    for (i=0; i < SCALER_ENUM_LAST; i++) {
+        // If the mode string matched the one in the combo, select it as the current mode
+        if (!(g_strcmp0(selected_string, scalers[i].scaler_name)))
+          scaler_mode = i;
+    }
+}
+
+
 
 
 
@@ -212,9 +223,6 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     uint32_t     * p_srcbuf = NULL;
     uint32_t     * p_scaledbuf = NULL;
 
-
-    // Initialize the scalers
-    scalers_init();
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
@@ -254,8 +262,9 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     // TODO: move to function
     // TODO: cache output to speed up redraws when output window gets panned around
 
-    guint scaler_mode = SCALER_HQ4X;
+// TODO: local scaler mode = GLOBAL?
     guint scale_factor = scalers[scaler_mode].scale_factor;
+
 
     // Allocate output buffer for the results
     // guchar = unsigned 8 bits, guint32 = unsigned 32 bits, uint32_t = unsigned 32 bits
@@ -278,6 +287,10 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
         // WARNING: requires access to a glboal var
 
         // RGBA 4pp assumption
+        // Resize scaled preview area to full buffer size
+//        gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
+
+
         // Draw scaled image onto preview area
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
                                 0, 0,
@@ -286,9 +299,6 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
                                 GIMP_RGBA_IMAGE,
                                 (guchar *) p_scaledbuf,
                                 width * scale_factor * bpp);
-
-        // Resize scaled preview area to full buffer size
-        gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
     }
     else
     {
