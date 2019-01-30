@@ -63,8 +63,7 @@ void scalers_init() {
 
 
 // TODO: there are probably better ways to do this than a global var
-static   GtkWidget *preview_scaled;
-
+ static   GtkWidget *preview_scaled;
 
 
 
@@ -99,6 +98,14 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
                             NULL);
 
+// Resize to show more of scaled preview by default (this sets MIN size)
+// Width = N + (N * 2) (source * scaled side by side)
+// Height = N + 50     (scaled above buttons)
+gtk_widget_set_size_request (dialog,
+                             500,
+                             400);
+
+
   gtk_dialog_set_alternative_button_order (GTK_DIALOG (dialog),
                                            GTK_RESPONSE_OK,
                                            GTK_RESPONSE_CANCEL,
@@ -123,50 +130,52 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   gtk_widget_show (preview_hbox);
 
 
-  preview = gimp_drawable_preview_new (drawable, NULL);
+    // Add a scaled preview area
+    // --> NOTE: Packing the scaled preview area BEFORE the preview source window
+    //           is a hackish-solution to redraw problems whenever the scaled
+    //           preview area was updated. It may have to do with signal order
+    //           and timing, along with redraw order.
+    //           --> TLDR; Swapping the packing order may require fixing that bug
+    preview_scaled = gimp_preview_area_new();
+    gtk_box_pack_start (GTK_BOX (preview_hbox), preview_scaled, TRUE, TRUE, 0);
+    gtk_widget_show (preview_scaled);
 
 
-  // Add source image preview area, set it to not expand if window grows
-  gtk_box_pack_start (GTK_BOX (preview_hbox), preview, FALSE, TRUE, 0);
-  gtk_widget_show (preview);
-  // Wire up preview redraw to call the pixel scaler filter
-  g_signal_connect_swapped (preview,
-                            "invalidated",
-                            G_CALLBACK (pixel_art_scalers_run),
-                            drawable);
-
-
-  // Add a scaled preview area
-  preview_scaled = gimp_preview_area_new();
-  // ---- // gtk_widget_set_size_request (preview_scaled, PREVIEW_SIZE, PREVIEW_SIZE);
-  gtk_box_pack_start (GTK_BOX (preview_hbox), preview_scaled, TRUE, TRUE, 0);
-  gtk_widget_show (preview_scaled);
+     // Add source image preview area, set it to not expand if window grows
+    preview = gimp_drawable_preview_new (drawable, NULL);
+    gtk_box_pack_start (GTK_BOX (preview_hbox), preview, FALSE, TRUE, 0);
+    gtk_widget_show (preview);
+    // Wire up preview redraw to call the pixel scaler filter
+    g_signal_connect_swapped (preview,
+                              "invalidated",
+                              G_CALLBACK (pixel_art_scalers_run),
+                              drawable);
 
 
 
-    // ADD: Combo box for -> SCALER MODE
+    // Add a Combo box for the SCALER MODE
+    // then add entries for the scaler types
     combo_scaler_mode = gtk_combo_box_text_new ();
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[SCALER_HQ2X].scaler_name);
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[SCALER_HQ3X].scaler_name);
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[SCALER_HQ4X].scaler_name);
-
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo_scaler_mode), SCALER_HQ2X);
 
-    // Attach to table and show
+    // Attach to table and show the combo
     gtk_box_pack_start (GTK_BOX (main_vbox), combo_scaler_mode, FALSE, FALSE, 0);
     gtk_widget_show (combo_scaler_mode);
 
-    // Connect the changed signal to update the scaler mode and then trigger a preview
+    // Connect the changed signal to update the scaler mode
     g_signal_connect (combo_scaler_mode,
                       "changed",
                       G_CALLBACK (on_combo_scaler_mode_changed),
                       &scaler_mode);
 
+    // Then connect a second signal to trigger a preview update
     g_signal_connect_swapped (combo_scaler_mode,
                               "changed",
                               G_CALLBACK (gimp_preview_invalidate),
                               preview);
-
 
 
   gtk_widget_show (dialog);
@@ -288,8 +297,6 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
         // RGBA 4pp assumption
         // Resize scaled preview area to full buffer size
-//        gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
-
 
         // Draw scaled image onto preview area
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
