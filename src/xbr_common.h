@@ -19,14 +19,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#ifndef __INTERNAL_HQX_COMMON_H_
-#define __INTERNAL_HQX_COMMON_H_
+#ifndef __INTERNAL_XBR_COMMON_H_
+#define __INTERNAL_XBR_COMMON_H_
 
 #include <stdlib.h>
 #include <stdint.h>
 
 #define XBR_INTERNAL
-#include "filters.h"
+#include "xbr_filters.h"
 
 #define MASK_2     0x0000FF00
 #define MASK_13    0x00FF00FF

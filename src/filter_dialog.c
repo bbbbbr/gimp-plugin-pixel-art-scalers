@@ -12,6 +12,7 @@
 
 #include <stdint.h>
 #include "hqx.h"
+#include "xbr_filters.h"
 
 
 extern const char PLUG_IN_PROCEDURE[];
@@ -23,11 +24,19 @@ static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
 static void on_combo_scaler_mode_changed (GtkComboBox *, gpointer);
 
 enum scaler_list {
-    SCALER_HQ2X = 0,
+    SCALER_ENUM_FIRST = 0,
+    SCALER_HQ2X = SCALER_ENUM_FIRST,
     SCALER_HQ3X,
     SCALER_HQ4X,
+
+    SCALER_XBR2X,
+    SCALER_XBR3X,
+    SCALER_XBR4X,
+
     SCALER_ENUM_LAST
 };
+
+
 
 typedef struct {
     void (*scaler_function)(uint32_t*, uint32_t*, int, int);
@@ -39,10 +48,11 @@ static scaler_info scalers[SCALER_ENUM_LAST];
 
 static gint scaler_mode;
 
-void scalers_init() {
+static void scalers_init() {
 
     // Init HQX scaler library
     hqxInit();
+    xbr_init_data();
 
     scalers[SCALER_HQ2X].scaler_function = &hq2x_32;
     scalers[SCALER_HQ2X].scale_factor    = 2;
@@ -56,10 +66,30 @@ void scalers_init() {
     scalers[SCALER_HQ4X].scale_factor    = 4;
     sprintf(scalers[SCALER_HQ4X].scaler_name, "HQ 4x");
 
+
+    scalers[SCALER_XBR2X].scaler_function = &xbr_filter_xbr2x;
+    scalers[SCALER_XBR2X].scale_factor    = 2;
+    sprintf(scalers[SCALER_XBR2X].scaler_name, "XBR 2x");
+
+    scalers[SCALER_XBR3X].scaler_function = &xbr_filter_xbr3x;
+    scalers[SCALER_XBR3X].scale_factor    = 3;
+    sprintf(scalers[SCALER_XBR3X].scaler_name, "XBR 3x");
+
+    scalers[SCALER_XBR4X].scaler_function = &xbr_filter_xbr4x;
+    scalers[SCALER_XBR4X].scale_factor    = 4;
+    sprintf(scalers[SCALER_XBR4X].scaler_name, "XBR 4x");
+
+
     // Now set the default scaler
     // TODO: accept last values for plugin so it remembers
     scaler_mode = SCALER_HQ2X;
  }
+
+
+static void scalers_exit_cleanup() {
+
+    xbr_exit_cleanup();
+}
 
 
 // TODO: there are probably better ways to do this than a global var
@@ -156,10 +186,11 @@ gtk_widget_set_size_request (dialog,
     // Add a Combo box for the SCALER MODE
     // then add entries for the scaler types
     combo_scaler_mode = gtk_combo_box_text_new ();
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[SCALER_HQ2X].scaler_name);
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[SCALER_HQ3X].scaler_name);
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[SCALER_HQ4X].scaler_name);
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_scaler_mode), SCALER_HQ2X);
+
+    for (int idx = SCALER_ENUM_FIRST; idx < SCALER_ENUM_LAST; idx++)
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[idx].scaler_name);
+
+    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_scaler_mode), SCALER_ENUM_FIRST);
 
     // Attach to table and show the combo
     gtk_box_pack_start (GTK_BOX (main_vbox), combo_scaler_mode, FALSE, FALSE, 0);
@@ -184,6 +215,9 @@ gtk_widget_set_size_request (dialog,
 
 
   gtk_widget_destroy (dialog);
+
+    // Initialize the scalers
+    scalers_exit_cleanup();
 
   return run;
 }

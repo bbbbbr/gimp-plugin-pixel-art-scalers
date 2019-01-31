@@ -34,6 +34,8 @@
 #include "xbr_filters.h"
 #include <stdlib.h>
 
+xbr_data *xbrData;
+
 #define LB_MASK       0x00FEFEFE
 #define RED_BLUE_MASK 0x00FF00FF
 #define GREEN_MASK    0x0000FF00
@@ -190,22 +192,36 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     }                                                                                               \
 } while (0)
 
-static XBR_INLINE void xbr_filter(const xbr_params *params, int n)
+//static XBR_INLINE void xbr_filter(const xbr_params *params, int n)
+static XBR_INLINE void xbr_filter( uint32_t * sp, uint32_t * dp, int Xres, int Yres, int scaleFactor )
 {
+    // TODO: This is making a 4 BPP (RGBA) assumption
+    int Bpp = 4; // RGBA
+
+    // Compatibility vars from changed function def
+    int       n = scaleFactor;
+    uint8_t * input = (uint8_t *)sp;
+    uint8_t * output = (uint8_t *)dp;
+    int       inWidth = Xres;
+    int       inHeight = Yres;
+    int       inPitch = inWidth * Bpp;
+    int       outPitch = inHeight * scaleFactor * Bpp;
+
+
     int x, y;
-    const uint32_t *r2y = params->data->rgbtoyuv;
-    const int nl = params->outPitch >> 2;
+    const uint32_t *r2y = xbrData->rgbtoyuv;
+    const int nl = outPitch >> 2;
     const int nl1 = nl + nl;
     const int nl2 = nl1 + nl;
 
-    for (y = 0; y < params->inHeight; y++) {
+    for (y = 0; y < inHeight; y++) {
 
-        uint32_t *E = (uint32_t *)(params->output + y * params->outPitch * n);
-        const uint32_t *sa2 = (uint32_t *)(params->input + y * params->inPitch - 8); /* center */
-        const uint32_t *sa1 = sa2 - (params->inPitch>>2); /* up x1 */
-        const uint32_t *sa0 = sa1 - (params->inPitch>>2); /* up x2 */
-        const uint32_t *sa3 = sa2 + (params->inPitch>>2); /* down x1 */
-        const uint32_t *sa4 = sa3 + (params->inPitch>>2); /* down x2 */
+        uint32_t *E = (uint32_t *)(output + y * outPitch * n);
+        const uint32_t *sa2 = (uint32_t *)(input + y * inPitch - 8); /* center */
+        const uint32_t *sa1 = sa2 - (inPitch>>2); /* up x1 */
+        const uint32_t *sa0 = sa1 - (inPitch>>2); /* up x2 */
+        const uint32_t *sa3 = sa2 + (inPitch>>2); /* down x1 */
+        const uint32_t *sa4 = sa3 + (inPitch>>2); /* down x2 */
 
         if (y <= 1) {
             sa0 = sa1;
@@ -214,14 +230,14 @@ static XBR_INLINE void xbr_filter(const xbr_params *params, int n)
             }
         }
 
-        if (y >= params->inHeight - 2) {
+        if (y >= inHeight - 2) {
             sa4 = sa3;
-            if (y == params->inHeight - 1) {
+            if (y == inHeight - 1) {
                 sa4 = sa3 = sa2;
             }
         }
 
-        for (x = 0; x < params->inWidth; x++) {
+        for (x = 0; x < inWidth; x++) {
             const uint32_t B1 = sa0[2];
             const uint32_t PB = sa1[2];
             const uint32_t PE = sa2[2];
@@ -240,14 +256,14 @@ static XBR_INLINE void xbr_filter(const xbr_params *params, int n)
             const uint32_t D0 = sa2[pprev2];
             const uint32_t G0 = sa3[pprev2];
 
-            const int pnext = 3 - (x == params->inWidth - 1);
+            const int pnext = 3 - (x == inWidth - 1);
             const uint32_t C1 = sa0[pnext];
             const uint32_t PC = sa1[pnext];
             const uint32_t PF = sa2[pnext];
             const uint32_t PI = sa3[pnext];
             const uint32_t I5 = sa4[pnext];
 
-            const int pnext2 = pnext + 1 - (x >= params->inWidth - 2);
+            const int pnext2 = pnext + 1 - (x >= inWidth - 2);
             const uint32_t C4 = sa1[pnext2];
             const uint32_t F4 = sa2[pnext2];
             const uint32_t I4 = sa3[pnext2];
@@ -292,15 +308,35 @@ static XBR_INLINE void xbr_filter(const xbr_params *params, int n)
     }
 }
 
+// HQX_API void HQX_CALLCONV hq2x_32_rb( uint32_t * sp, uint32_t srb, uint32_t * dp, uint32_t drb, int Xres, int Yres )
+/*
 #define XBR_FUNC(size) \
 void xbr_filter_xbr##size##x(const xbr_params *params) \
 { \
     xbr_filter(params, size); \
 }
+*/
 
-XBR_FUNC(2)
-XBR_FUNC(3)
-XBR_FUNC(4)
+
+void xbr_filter_xbr2x( uint32_t * sp,  uint32_t * dp, int Xres, int Yres )
+{
+    xbr_filter( sp, dp, Xres, Yres, 2); // 2x scale factor
+}
+
+
+void xbr_filter_xbr3x( uint32_t * sp, uint32_t * dp, int Xres, int Yres )
+{
+    xbr_filter( sp, dp, Xres, Yres, 3); // 3x scale factor
+}
+
+
+void xbr_filter_xbr4x( uint32_t * sp, uint32_t * dp, int Xres, int Yres )
+{
+    xbr_filter( sp, dp, Xres, Yres, 4); // 4x scale factor
+}
+
+
+
 
 
 static XBR_INLINE int _max(int a, int b)
@@ -314,8 +350,13 @@ static XBR_INLINE int _min(int a, int b)
 }
 
 
-void xbr_init_data(xbr_data *data)
+//void xbr_init_data(xbr_data *data)
+// TODO, is this lookup table redundant with the HQX -> hqxInit() rgbtoyuv lookup table?
+void xbr_init_data()
 {
+
+    xbrData = malloc(sizeof(xbr_data));
+
     uint32_t c;
     int bg, rg, g;
 
@@ -328,10 +369,17 @@ void xbr_init_data(xbr_data *data)
             uint32_t y = (uint32_t)(( 299*rg + 1000*startg + 114*bg)/1000);
             c = bg + (rg<<16) + 0x010101 * startg;
             for (g = startg; g <= endg; g++) {
-                data->rgbtoyuv[c] = ((y++) << 16) + (u << 8) + v;
+                xbrData->rgbtoyuv[c] = ((y++) << 16) + (u << 8) + v;
                 c+= 0x010101;
             }
         }
     }
+
 }
 
+void xbr_exit_cleanup()
+{
+    // Release buffer
+    if (xbrData)
+        free(xbrData);
+}

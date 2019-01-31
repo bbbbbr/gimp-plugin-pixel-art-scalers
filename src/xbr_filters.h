@@ -62,15 +62,20 @@ typedef struct {
     const xbr_data *data;
 } xbr_params;
 
+/*
 XBR_EXPORT void xbr_filter_xbr2x(const xbr_params *ctx);
 XBR_EXPORT void xbr_filter_xbr3x(const xbr_params *ctx);
 XBR_EXPORT void xbr_filter_xbr4x(const xbr_params *ctx);
+*/
 
-XBR_EXPORT void xbr_filter_hq2x(const xbr_params *ctx);
-XBR_EXPORT void xbr_filter_hq3x(const xbr_params *ctx);
-XBR_EXPORT void xbr_filter_hq4x(const xbr_params *ctx);
+XBR_EXPORT void xbr_filter_xbr2x(uint32_t*, uint32_t*, int, int);
+XBR_EXPORT void xbr_filter_xbr3x(uint32_t*, uint32_t*, int, int);
+XBR_EXPORT void xbr_filter_xbr4x(uint32_t*, uint32_t*, int, int);
 
-XBR_EXPORT void xbr_init_data(xbr_data *data);
+
+//XBR_EXPORT void xbr_init_data(xbr_data *data);
+XBR_EXPORT void xbr_init_data();
+XBR_EXPORT void xbr_exit_cleanup();
 
 
 #ifdef __cplusplus
