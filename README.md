@@ -7,6 +7,8 @@ Supported image scalers:
  * HQX (hq2x, hq3x, hq4x)
  * XBR (xbr2x, xbr3x, xbr4x)
 
+![GIMP Image Editor using Pixel Art Scalers Plugin](https://raw.githubusercontent.com/bbbbbr/gimp-plugin-pixel-art-scalers/master/info/gimp-plugin-pixel-art-scalers.png)
+
 
  OS binaries available for:
  * Linux
