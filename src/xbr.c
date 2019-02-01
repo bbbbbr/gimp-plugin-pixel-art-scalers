@@ -204,24 +204,24 @@ static XBR_INLINE void xbr_filter( uint32_t * sp, uint32_t * dp, int Xres, int Y
     uint8_t * output = (uint8_t *)dp;
     int       inWidth = Xres;
     int       inHeight = Yres;
-    int       inPitch = inWidth * Bpp;
-    int       outPitch = inWidth * scaleFactor * Bpp;
+    int       input_width_bytes = inWidth * Bpp;
+    int       output_width_bytes = inWidth * scaleFactor * Bpp;
 
 
     int x, y;
     const uint32_t *r2y = xbrData->rgbtoyuv;
-    const int nl = outPitch >> 2;
+    const int nl = output_width_bytes >> 2;
     const int nl1 = nl + nl;
     const int nl2 = nl1 + nl;
 
     for (y = 0; y < inHeight; y++) {
 
-        uint32_t *E = (uint32_t *)(output + y * outPitch * n);
-        const uint32_t *sa2 = (uint32_t *)(input + y * inPitch - 8); /* center */
-        const uint32_t *sa1 = sa2 - (inPitch>>2); /* up x1 */
-        const uint32_t *sa0 = sa1 - (inPitch>>2); /* up x2 */
-        const uint32_t *sa3 = sa2 + (inPitch>>2); /* down x1 */
-        const uint32_t *sa4 = sa3 + (inPitch>>2); /* down x2 */
+        uint32_t *E = (uint32_t *)(output + y * output_width_bytes * n);
+        const uint32_t *sa2 = (uint32_t *)(input + y * input_width_bytes - 8); /* center */
+        const uint32_t *sa1 = sa2 - (input_width_bytes>>2); /* up x1 */
+        const uint32_t *sa0 = sa1 - (input_width_bytes>>2); /* up x2 */
+        const uint32_t *sa3 = sa2 + (input_width_bytes>>2); /* down x1 */
+        const uint32_t *sa4 = sa3 + (input_width_bytes>>2); /* down x2 */
 
         if (y <= 1) {
             sa0 = sa1;
