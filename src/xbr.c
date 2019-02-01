@@ -205,7 +205,7 @@ static XBR_INLINE void xbr_filter( uint32_t * sp, uint32_t * dp, int Xres, int Y
     int       inWidth = Xres;
     int       inHeight = Yres;
     int       inPitch = inWidth * Bpp;
-    int       outPitch = inHeight * scaleFactor * Bpp;
+    int       outPitch = inWidth * scaleFactor * Bpp;
 
 
     int x, y;
