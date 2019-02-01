@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include "hqx.h"
 
-uint32_t   RGBtoYUV[16777216];
+uint32_t   RGBtoYUV[16777216]; // TODO: can this be shared between HQX & XBR?  ~16MB of lookup table
 uint32_t   YUV1, YUV2;
 
 HQX_API void HQX_CALLCONV hqxInit(void)
