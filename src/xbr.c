@@ -34,7 +34,11 @@
 #include "xbr_filters.h"
 #include <stdlib.h>
 
+/*
 xbr_data *xbrData;
+xbr_data xbrLookupTable; // Allocate the lookup table ~16MB
+*/
+uint32_t   XBR_RGBtoYUV[16777216]; // TODO: can this be shared between HQX & XBR?  ~16MB of lookup table
 
 #define LB_MASK       0x00FEFEFE
 #define RED_BLUE_MASK 0x00FF00FF
@@ -209,7 +213,7 @@ static XBR_INLINE void xbr_filter( uint32_t * sp, uint32_t * dp, int Xres, int Y
 
 
     int x, y;
-    const uint32_t *r2y = xbrData->rgbtoyuv;
+    const uint32_t *r2y = XBR_RGBtoYUV;
     const int nl = output_width_bytes >> 2;
     const int nl1 = nl + nl;
     const int nl2 = nl1 + nl;
@@ -355,7 +359,7 @@ static XBR_INLINE int _min(int a, int b)
 void xbr_init_data()
 {
 
-    xbrData = malloc(sizeof(xbr_data));
+//    xbrData = &xbrLookupTable;
 
     uint32_t c;
     int bg, rg, g;
@@ -369,17 +373,10 @@ void xbr_init_data()
             uint32_t y = (uint32_t)(( 299*rg + 1000*startg + 114*bg)/1000);
             c = bg + (rg<<16) + 0x010101 * startg;
             for (g = startg; g <= endg; g++) {
-                xbrData->rgbtoyuv[c] = ((y++) << 16) + (u << 8) + v;
+                XBR_RGBtoYUV[c] = ((y++) << 16) + (u << 8) + v;
                 c+= 0x010101;
             }
         }
     }
 
-}
-
-void xbr_exit_cleanup()
-{
-    // Release buffer
-    if (xbrData)
-        free(xbrData);
 }

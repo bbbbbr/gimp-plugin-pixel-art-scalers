@@ -86,12 +86,6 @@ static void scalers_init() {
  }
 
 
-static void scalers_exit_cleanup() {
-
-    xbr_exit_cleanup();
-}
-
-
 // TODO: there are probably better ways to do this than a global var
  static   GtkWidget *preview_scaled;
 
@@ -215,9 +209,6 @@ gtk_widget_set_size_request (dialog,
 
 
   gtk_widget_destroy (dialog);
-
-    // Initialize the scalers
-    scalers_exit_cleanup();
 
   return run;
 }

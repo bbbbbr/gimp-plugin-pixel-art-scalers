@@ -50,9 +50,12 @@ extern "C" {
 	#define XBR_EXPORT
 #endif
 
+
+/*
 typedef struct {
-    uint32_t rgbtoyuv[1<<24];
+    uint32_t rgbtoyuv[1<<24]; // ~16 Megabytes of lookup table
 } xbr_data;
+
 
 typedef struct {
     const uint8_t *input;
@@ -61,6 +64,7 @@ typedef struct {
     int inPitch, outPitch;
     const xbr_data *data;
 } xbr_params;
+*/
 
 /*
 XBR_EXPORT void xbr_filter_xbr2x(const xbr_params *ctx);
@@ -75,7 +79,6 @@ XBR_EXPORT void xbr_filter_xbr4x(uint32_t*, uint32_t*, int, int);
 
 //XBR_EXPORT void xbr_init_data(xbr_data *data);
 XBR_EXPORT void xbr_init_data();
-XBR_EXPORT void xbr_exit_cleanup();
 
 
 #ifdef __cplusplus
