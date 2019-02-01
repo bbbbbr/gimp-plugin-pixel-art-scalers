@@ -15,6 +15,12 @@
 #include "xbr_filters.h"
 
 
+#define BYTE_SIZE_RGBA_4BPP 4
+#define BYTE_SIZE_RGB_3BPP  3
+
+#define ALPHA_MASK_OPAQUE  0xFF  // When adding alpha mask byte, set to 100% opaque / visible
+
+
 extern const char PLUG_IN_PROCEDURE[];
 extern const char PLUG_IN_ROLE[];
 extern const char PLUG_IN_BINARY[];
@@ -22,6 +28,9 @@ extern const char PLUG_IN_BINARY[];
 static void filter_apply (int, uint32_t *, uint32_t *, int, int);
 static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
 static void on_combo_scaler_mode_changed (GtkComboBox *, gpointer);
+
+static void buffer_add_alpha_byte(guchar *, glong);
+static void buffer_remove_alpha_byte(guchar *, glong);
 
 enum scaler_list {
     SCALER_ENUM_FIRST = 0,
@@ -220,7 +229,7 @@ gtk_widget_set_size_request (dialog,
 static void on_combo_scaler_mode_changed (GtkComboBox *combo, gpointer callback_data)
 {
 
-    // TODO: de
+    // TODO: stop using global var scaler_mode?
     gchar *selected_string = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(combo) );
     gint i;
 
@@ -252,10 +261,12 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     gint         width, height;
 
     gint         x, y;
-    gint         alpha;
 
     uint32_t     * p_srcbuf = NULL;
     uint32_t     * p_scaledbuf = NULL;
+
+    glong        srcbuf_size = 0;
+    glong        scaledbuf_size = 0;
 
 
     // Get the working image area for either the preview sub-window or the entire image
@@ -271,10 +282,11 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     // Get bit depth and alpha mask status
     bpp = drawable->bpp;
     has_alpha = gimp_drawable_has_alpha (drawable->drawable_id);
-    alpha = (has_alpha) ? drawable->bpp - 1 : drawable->bpp;
 
-    // Allocate a working buffer to copy the source image into
-    p_srcbuf = (uint32_t *) g_new (guchar, width * height * bpp);
+    // Allocate a working buffer to copy the source image into - always RGBA 4BPP
+    srcbuf_size = width * height * BYTE_SIZE_RGBA_4BPP;
+    p_srcbuf = (uint32_t *) g_new (guchar, srcbuf_size);
+
 
     // FALSE, FALSE : region will be used to read the actual drawable datas
     // Initialize source pixel region with drawable
@@ -284,13 +296,15 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
                          width, height,
                          FALSE, FALSE);
 
-
     // Copy source image to working buffer
     gimp_pixel_rgn_get_rect (&src_rgn,
                              (guchar *) p_srcbuf,
                              x, y, width, height);
 
 
+    // Add alpha channel byte if needed (scalers expect 4BPP RGBA)
+    if (bpp == BYTE_SIZE_RGB_3BPP)  // i.e. !has_alpha
+        buffer_add_alpha_byte((guchar *) p_srcbuf, srcbuf_size);
 
     // ====== BEGIN SCALER ======
     // TODO: move to function
@@ -302,11 +316,12 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
     // Allocate output buffer for the results
     // guchar = unsigned 8 bits, guint32 = unsigned 32 bits, uint32_t = unsigned 32 bits
-    p_scaledbuf = (uint32_t *) g_new (guint, width * scale_factor * height * scale_factor * sizeof(uint32_t));
+    scaledbuf_size = width * scale_factor * height * scale_factor * sizeof(uint32_t);
+    p_scaledbuf = (uint32_t *) g_new (guint, scaledbuf_size);
 
     if (p_scaledbuf) {
 
-        // TODO: Careful! Making assumptions about p_srcbuf : bpp = 4 / uint32_t here
+        // Expects 4BPP RGBA in p_srcbuf (outputs same in p_scaledbuf)
         filter_apply (scaler_mode,
                       p_srcbuf,
                       p_scaledbuf,
@@ -318,28 +333,28 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     // Filter is done, apply the update
     if (preview) {
 
-        // WARNING: requires access to a glboal var
-
-        // RGBA 4pp assumption
-        // Resize scaled preview area to full buffer size
-
         // Draw scaled image onto preview area
+        //   NOTE: requires access to a glboal var (preview_scaled)
+        //   Preview expects 4BPP RGBA
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
                                 0, 0,
                                 width * scale_factor,
                                 height * scale_factor,
                                 GIMP_RGBA_IMAGE,
                                 (guchar *) p_scaledbuf,
-                                width * scale_factor * bpp);
+                                width * scale_factor * BYTE_SIZE_RGBA_4BPP);
     }
     else
     {
+
+        // Remove the alpha byte that was added if the source image was 3BPP RGB
+        if (bpp == 3)  // i.e. !has_alpha
+            buffer_remove_alpha_byte((guchar *) p_scaledbuf, scaledbuf_size);
+
         // Apply image result with full resize
         resize_image_and_apply_changes(drawable,
                                        (guchar *)p_scaledbuf,
                                        scale_factor);
-
-
     }
 
     // Free the working buffer
@@ -359,7 +374,6 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 // * guint    scale_factor : image scale multiplier
 static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbuf, guint scale_factor)
 {
-    // TODO: Fix assumption that image has alpha layer (BytesPerPixel = 4)
     GimpPixelRgn src_rgn, dest_rgn;
     guint x,y, width, height;
 
@@ -426,3 +440,50 @@ static void filter_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_dest
                                                     (int) height);
     }
 }
+
+
+static void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
+
+    // Iterates through the buffer backward, from END to START
+    // and remaps from RGB to RGBA (adds alpha byte)
+    // --> Copies the buffer on top of itself, so ORDER IS IMPORTANT!
+
+    guchar * p_3bpp = p_srcbuf + ((srcbuf_size / 4) *3) - 3; // Last pixel of 3BPP buffer
+    guchar * p_4bpp = p_srcbuf + srcbuf_size -  4;          // Last pixel of 4BPP Buffer
+    glong idx = 0;
+
+    while(idx < srcbuf_size) {
+        p_4bpp[3] = ALPHA_MASK_OPAQUE;  // Set alpha mask byte to 100% opaque / visible
+        p_4bpp[2] = p_3bpp[2]; // copy B
+        p_4bpp[1] = p_3bpp[1]; // copy G
+        p_4bpp[0] = p_3bpp[0]; // copy R
+
+        p_3bpp -= 3;  // Advance 3BPP image pointer to previous pixel
+        p_4bpp -= 4;  // Advance 4BPP image pointer to previous pixel
+        idx += 4;
+    }
+}
+
+
+static void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
+
+    // Iterates through the buffer forward, from START to END
+    // and remaps from RGBA to RGB (removes alpha byte)
+    // --> Copies the buffer on top of itself, so ORDER IS IMPORTANT!
+
+    guchar * p_3bpp = p_srcbuf; // Last First of 3BPP buffer
+    guchar * p_4bpp = p_srcbuf; // Last First of 4BPP Buffer
+    glong idx = 0;
+
+    while(idx < srcbuf_size) {
+          p_3bpp[0] = p_4bpp[0]; // copy R
+          p_3bpp[1] = p_4bpp[1]; // copy G
+          p_3bpp[2] = p_4bpp[2]; // copy B
+
+        p_3bpp += 3;  // Advance 3BPP image pointer to next pixel
+        p_4bpp += 4;  // Advance 4BPP image pointer to next pixel
+        idx += 4;
+    }
+}
+
+
