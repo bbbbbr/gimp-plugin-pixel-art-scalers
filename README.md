@@ -1,19 +1,21 @@
-gimp pixel art scalers plugin
+Gimp Pixel Art Scalers Plugin
 ===========
 
-GIMP plugin for rescaling images using pixel art scalers such as hq2x.
+GIMP plugin for rescaling images using Pixel Art Scalers
 
 Supported image scalers:
- * xxxx
+ * HQX (hq2x, hq3x, hq4x)
+ * XBR (xbr2x, xbr3x, xbr4x)
 
 
  OS binaries available for:
  * Linux
- * Windows
-
+ 
 
 ## Acknowledgement:
   * For an overview of the scalers see: https://en.wikipedia.org/wiki/Pixel-art_scaling_algorithms
+  * HQX: https://web.archive.org/web/20130925011623/http://www.hiend3d.com/hq2x.html
+  * XBR: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 , https://github.com/Treeki/libxbr-standalone
 
 
 ## Quick instructions:
@@ -21,7 +23,7 @@ Supported image scalers:
 Native compile/install on Linux using below.
 
 ```
-gimptool-2.0 --install file-rom-binfile.c
+gimptool-2.0 --install (TODO).c
     or
  make (and then copy to your GIMP plugin folder, depends on version)
 
