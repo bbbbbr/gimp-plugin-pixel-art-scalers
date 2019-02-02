@@ -1,4 +1,5 @@
 /filter-pixel-art-scalers
+/plugin-pixel-art-scalers
 *.zip
 *.7z
 obj/
