@@ -12,6 +12,7 @@ Supported image scalers:
 
  OS binaries available for:
  * Linux
+ * Windows
  
 
 ## Acknowledgement:
