@@ -13,7 +13,7 @@
 
 const char PLUG_IN_PROCEDURE[] = "filter-pixel-art-scalers-proc";
 const char PLUG_IN_ROLE[]      = "gimp-pixel-art-scalers";
-const char PLUG_IN_BINARY[]    = "filter-pixel-art-scalers";
+const char PLUG_IN_BINARY[]    = "plugin-pixel-art-scalers";
 
 
 // Predeclare our entrypoints
