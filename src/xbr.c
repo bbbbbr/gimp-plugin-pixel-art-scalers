@@ -196,8 +196,8 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y, const uint32_t *r2y)
     }                                                                                               \
 } while (0)
 
-//static XBR_INLINE void xbr_filter(const xbr_params *params, int n)
-static XBR_INLINE void xbr_filter( uint32_t * sp, uint32_t * dp, int Xres, int Yres, int scaleFactor )
+//static inline void xbr_filter(const xbr_params *params, int n)
+static inline void xbr_filter( uint32_t * sp, uint32_t * dp, int Xres, int Yres, int scaleFactor )
 {
     // TODO: This is making a 4 BPP (RGBA) assumption
     int Bpp = 4; // RGBA
@@ -343,12 +343,12 @@ void xbr_filter_xbr4x( uint32_t * sp, uint32_t * dp, int Xres, int Yres )
 
 
 
-static XBR_INLINE int _max(int a, int b)
+static inline int _max(int a, int b)
 {
 	return (a > b) ? a : b;
 }
 
-static XBR_INLINE int _min(int a, int b)
+static inline int _min(int a, int b)
 {
 	return (a < b) ? a : b;
 }

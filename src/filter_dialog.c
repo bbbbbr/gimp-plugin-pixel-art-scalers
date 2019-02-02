@@ -111,10 +111,10 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   GtkWidget *main_vbox;
   GtkWidget *preview_hbox;
   GtkWidget *preview;
-  GtkWidget *table;
   GtkWidget *combo_scaler_mode;
   GtkObject *scale_data;
   gboolean   run;
+  gint       idx;
 
 
     // Initialize the scalers
@@ -190,7 +190,7 @@ gtk_widget_set_size_request (dialog,
     // then add entries for the scaler types
     combo_scaler_mode = gtk_combo_box_text_new ();
 
-    for (int idx = SCALER_ENUM_FIRST; idx < SCALER_ENUM_LAST; idx++)
+    for (idx = SCALER_ENUM_FIRST; idx < SCALER_ENUM_LAST; idx++)
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[idx].scaler_name);
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo_scaler_mode), SCALER_ENUM_FIRST);
@@ -257,17 +257,18 @@ static void on_combo_scaler_mode_changed (GtkComboBox *combo, gpointer callback_
 void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 {
     GimpPixelRgn src_rgn;
-    gint         bpp, has_alpha;
+    gint         bpp;
+    // gint has_alpha;
     gint         width, height;
 
     gint         x, y;
+    guint scale_factor;
 
     uint32_t     * p_srcbuf = NULL;
     uint32_t     * p_scaledbuf = NULL;
 
     glong        srcbuf_size = 0;
     glong        scaledbuf_size = 0;
-
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
@@ -281,7 +282,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
     // Get bit depth and alpha mask status
     bpp = drawable->bpp;
-    has_alpha = gimp_drawable_has_alpha (drawable->drawable_id);
+    // has_alpha = gimp_drawable_has_alpha (drawable->drawable_id);
 
     // Allocate a working buffer to copy the source image into - always RGBA 4BPP
     srcbuf_size = width * height * BYTE_SIZE_RGBA_4BPP;
@@ -311,7 +312,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     // TODO: cache output to speed up redraws when output window gets panned around
 
 // TODO: local scaler mode = GLOBAL?
-    guint scale_factor = scalers[scaler_mode].scale_factor;
+    scale_factor = scalers[scaler_mode].scale_factor;
 
 
     // Allocate output buffer for the results
@@ -374,8 +375,9 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 // * guint    scale_factor : image scale multiplier
 static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbuf, guint scale_factor)
 {
-    GimpPixelRgn src_rgn, dest_rgn;
-    guint x,y, width, height;
+    GimpPixelRgn  dest_rgn;
+    gint          x,y, width, height;
+    GimpDrawable  * resized_drawable;
 
     if (! gimp_drawable_mask_intersect (drawable->drawable_id,
                                          &x, &y, &width, &height))
@@ -395,9 +397,8 @@ static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_s
 
 
         // Get a new drawable from the resized layer/image
-        GimpDrawable *resized_drawable = gimp_drawable_get(
-                                           gimp_image_get_active_drawable(
-                                             gimp_drawable_get_image(drawable->drawable_id) ) );
+        resized_drawable = gimp_drawable_get( gimp_image_get_active_drawable(
+                                                gimp_drawable_get_image(drawable->drawable_id) ) );
 
 
         // Initialize destination pixel region with drawable

@@ -33,24 +33,6 @@
 #include <stdint.h>
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef _MSC_VER
-	#define XBR_INLINE __inline
-
-	#ifdef XBR_INTERNAL
-		#define XBR_EXPORT __declspec(dllexport)
-	#else
-		#define XBR_EXPORT __declspec(dllimport)
-	#endif
-#else
-	#define XBR_INLINE inline
-	#define XBR_EXPORT
-#endif
-
-
 /*
 typedef struct {
     uint32_t rgbtoyuv[1<<24]; // ~16 Megabytes of lookup table
@@ -72,18 +54,12 @@ XBR_EXPORT void xbr_filter_xbr3x(const xbr_params *ctx);
 XBR_EXPORT void xbr_filter_xbr4x(const xbr_params *ctx);
 */
 
-XBR_EXPORT void xbr_filter_xbr2x(uint32_t*, uint32_t*, int, int);
-XBR_EXPORT void xbr_filter_xbr3x(uint32_t*, uint32_t*, int, int);
-XBR_EXPORT void xbr_filter_xbr4x(uint32_t*, uint32_t*, int, int);
+void xbr_filter_xbr2x(uint32_t*, uint32_t*, int, int);
+void xbr_filter_xbr3x(uint32_t*, uint32_t*, int, int);
+void xbr_filter_xbr4x(uint32_t*, uint32_t*, int, int);
 
 
-//XBR_EXPORT void xbr_init_data(xbr_data *data);
-XBR_EXPORT void xbr_init_data();
-
-
-#ifdef __cplusplus
-}
-#endif
+// void xbr_init_data(xbr_data *data);
+void xbr_init_data();
 
 #endif
-
