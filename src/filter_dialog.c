@@ -57,7 +57,7 @@ static scaler_info scalers[SCALER_ENUM_LAST];
 
 static gint scaler_mode;
 
-static void scalers_init() {
+static void scalers_init(void) {
 
     // Init HQX scaler library
     hqxInit();
@@ -112,7 +112,6 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   GtkWidget *preview_hbox;
   GtkWidget *preview;
   GtkWidget *combo_scaler_mode;
-  GtkObject *scale_data;
   gboolean   run;
   gint       idx;
 

@@ -81,6 +81,9 @@ void hq2x_32_rb( uint32_t * sp, uint32_t srb, uint32_t * dp, uint32_t drb, int X
     uint8_t *sRowP = (uint8_t *) sp;
     uint8_t *dRowP = (uint8_t *) dp;
     uint32_t yuv1, yuv2;
+    int pattern;
+    int flag;
+
 
     //   +----+----+----+
     //   |    |    |    |
@@ -130,10 +133,7 @@ void hq2x_32_rb( uint32_t * sp, uint32_t srb, uint32_t * dp, uint32_t drb, int X
                 w[9] = w[8];
             }
 
-            int pattern;
             pattern = 0;
-
-            int flag;
             flag = 1;
 
             yuv1 = rgb_to_yuv(w[5]);
