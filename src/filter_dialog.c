@@ -397,7 +397,7 @@ static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_s
 
         // Get a new drawable from the resized layer/image
         resized_drawable = gimp_drawable_get( gimp_image_get_active_drawable(
-                                                gimp_drawable_get_image(drawable->drawable_id) ) );
+                                                gimp_item_get_image(drawable->drawable_id) ) );
 
 
         // Initialize destination pixel region with drawable
