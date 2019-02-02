@@ -22,7 +22,7 @@
 uint32_t   RGBtoYUV[16777216]; // TODO: can this be shared between HQX & XBR?  ~16MB of lookup table
 uint32_t   YUV1, YUV2;
 
-HQX_API void HQX_CALLCONV hqxInit(void)
+void hqxInit(void)
 {
     /* Initalize RGB to YUV lookup table */
     uint32_t c, r, g, b, y, u, v;

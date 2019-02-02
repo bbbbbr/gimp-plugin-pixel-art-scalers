@@ -71,7 +71,7 @@
 #define PIXEL11_90    Interp9(dp+dpL+1, w[5], w[6], w[8]);
 #define PIXEL11_100   Interp10(dp+dpL+1, w[5], w[6], w[8]);
 
-HQX_API void HQX_CALLCONV hq2x_32_rb( uint32_t * sp, uint32_t srb, uint32_t * dp, uint32_t drb, int Xres, int Yres )
+void hq2x_32_rb( uint32_t * sp, uint32_t srb, uint32_t * dp, uint32_t drb, int Xres, int Yres )
 {
     int  i, j, k;
     int  prevline, nextline;
@@ -130,8 +130,11 @@ HQX_API void HQX_CALLCONV hq2x_32_rb( uint32_t * sp, uint32_t srb, uint32_t * dp
                 w[9] = w[8];
             }
 
-            int pattern = 0;
-            int flag = 1;
+            int pattern;
+            pattern = 0;
+
+            int flag;
+            flag = 1;
 
             yuv1 = rgb_to_yuv(w[5]);
 
@@ -2802,7 +2805,7 @@ HQX_API void HQX_CALLCONV hq2x_32_rb( uint32_t * sp, uint32_t srb, uint32_t * dp
     }
 }
 
-HQX_API void HQX_CALLCONV hq2x_32( uint32_t * sp, uint32_t * dp, int Xres, int Yres )
+void hq2x_32( uint32_t * sp, uint32_t * dp, int Xres, int Yres )
 {
     uint32_t rowBytesL = Xres * 4;
     hq2x_32_rb(sp, rowBytesL, dp, rowBytesL * 2, Xres, Yres);

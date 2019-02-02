@@ -60,6 +60,6 @@ void xbr_filter_xbr4x(uint32_t*, uint32_t*, int, int);
 
 
 // void xbr_init_data(xbr_data *data);
-void xbr_init_data();
+void xbr_init_data(void);
 
 #endif

@@ -312,7 +312,7 @@ static inline void xbr_filter( uint32_t * sp, uint32_t * dp, int Xres, int Yres,
     }
 }
 
-// HQX_API void HQX_CALLCONV hq2x_32_rb( uint32_t * sp, uint32_t srb, uint32_t * dp, uint32_t drb, int Xres, int Yres )
+// void hq2x_32_rb( uint32_t * sp, uint32_t srb, uint32_t * dp, uint32_t drb, int Xres, int Yres )
 /*
 #define XBR_FUNC(size) \
 void xbr_filter_xbr##size##x(const xbr_params *params) \
@@ -356,7 +356,7 @@ static inline int _min(int a, int b)
 
 //void xbr_init_data(xbr_data *data)
 // TODO, is this lookup table redundant with the HQX -> hqxInit() rgbtoyuv lookup table?
-void xbr_init_data()
+void xbr_init_data(void)
 {
 
 //    xbrData = &xbrLookupTable;
