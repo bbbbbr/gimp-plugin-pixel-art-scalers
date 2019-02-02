@@ -14,18 +14,18 @@ endif
 
 if HAVE_WINDRES
 include $(top_srcdir)/build/windows/gimprc-plug-ins.rule
-filter_pixel_art_scalers_RC = filter_pixel_art_scalers.o
+plugin_pixel_art_scalers_RC = plugin_pixel_art_scalers.rc.o
 endif
 
 AM_LDFLAGS = $(mwindows)
 
 libexecdir = $(gimpplugindir)/plug-ins
 
-libexec_PROGRAMS = filter_pixel_art_scalers
+libexec_PROGRAMS = plugin_pixel_art_scalers
 
-file_rom_bin_SOURCES = \
-	filter_dialog.c \
+plugin_pixel_art_scalers_SOURCES = \
 	filter_pixel_art_scalers.c \
+	filter_dialog.c \
 	hq3x.c \
 	hqx_init.c \
 	hq2x.c \
@@ -53,4 +53,4 @@ LDADD = \
 	$(GTK_LIBS)		\
 	$(RT_LIBS)		\
 	$(INTLLIBS)		\
-	$(filter_pixel_art_scalers_RC)
+	$(plugin_pixel_art_scalers_RC)
