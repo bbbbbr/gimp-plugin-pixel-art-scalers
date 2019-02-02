@@ -1,6 +1,6 @@
 # Predefined constants
 CC      = gcc
-TARGET  = filter-pixel-art-scalers
+TARGET  = plugin-pixel-art-scalers
 SRC_DIR = src
 OBJ_DIR = obj
 CFLAGS  = $(shell pkg-config --cflags gtk+-2.0) \
