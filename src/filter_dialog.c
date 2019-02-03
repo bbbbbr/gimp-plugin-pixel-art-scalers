@@ -11,8 +11,11 @@
 #include "filter_dialog.h"
 
 #include <stdint.h>
+
+// Filter includes
 #include "hqx.h"
 #include "xbr_filters.h"
+#include "filter_scalex.h"
 
 
 #define BYTE_SIZE_RGBA_4BPP 4
@@ -37,9 +40,11 @@ enum scaler_list {
 
     SCALER_2X_HQX = SCALER_ENUM_FIRST,
     SCALER_2X_XBR,
+    SCALER_2X_SCALEX,
 
     SCALER_3X_HQX,
     SCALER_3X_XBR,
+    SCALER_3X_SCALEX,
 
     SCALER_4X_HQX,
     SCALER_4X_XBR,
@@ -65,6 +70,7 @@ static void scalers_init(void) {
     hqxInit();
     xbr_init_data();
 
+    // HQX
     scalers[SCALER_2X_HQX].scaler_function = &hq2x_32;
     scalers[SCALER_2X_HQX].scale_factor    = 2;
     sprintf(scalers[SCALER_2X_HQX].scaler_name, "2x HQx");
@@ -78,6 +84,7 @@ static void scalers_init(void) {
     sprintf(scalers[SCALER_4X_HQX].scaler_name, "4x HQx");
 
 
+    // XBR
     scalers[SCALER_2X_XBR].scaler_function = &xbr_filter_xbr2x;
     scalers[SCALER_2X_XBR].scale_factor    = 2;
     sprintf(scalers[SCALER_2X_XBR].scaler_name, "2x XBR");
@@ -90,6 +97,15 @@ static void scalers_init(void) {
     scalers[SCALER_4X_XBR].scale_factor    = 4;
     sprintf(scalers[SCALER_4X_XBR].scaler_name, "4x XBR");
 
+
+    // SCALEX
+    scalers[SCALER_2X_SCALEX].scaler_function = &filter_scalex_2x;
+    scalers[SCALER_2X_SCALEX].scale_factor    = 2;
+    sprintf(scalers[SCALER_2X_SCALEX].scaler_name, "2x ScaleX");
+
+    scalers[SCALER_3X_SCALEX].scaler_function = &filter_scalex_3x;
+    scalers[SCALER_3X_SCALEX].scale_factor    = 3;
+    sprintf(scalers[SCALER_3X_SCALEX].scaler_name, "3x ScaleX");
 
     // Now set the default scaler
     // TODO: accept last values for plugin so it remembers
@@ -287,6 +303,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
     // Allocate a working buffer to copy the source image into - always RGBA 4BPP
     srcbuf_size = width * height * BYTE_SIZE_RGBA_4BPP;
+    // TODO: WARNING Shouldn this be gint to ensure correct uint32_t byte alignment?
     p_srcbuf = (uint32_t *) g_new (guchar, srcbuf_size);
 
 
@@ -319,6 +336,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     // Allocate output buffer for the results
     // guchar = unsigned 8 bits, guint32 = unsigned 32 bits, uint32_t = unsigned 32 bits
     scaledbuf_size = width * scale_factor * height * scale_factor * sizeof(uint32_t);
+    // TODO: WARNING is this overallocating? Above uses sizeof uint32_t, which seems to imply guchar, maybe reduce allocation size
     p_scaledbuf = (uint32_t *) g_new (guint, scaledbuf_size);
 
     if (p_scaledbuf) {
