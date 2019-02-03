@@ -34,13 +34,15 @@ static void buffer_remove_alpha_byte(guchar *, glong);
 
 enum scaler_list {
     SCALER_ENUM_FIRST = 0,
-    SCALER_HQ2X = SCALER_ENUM_FIRST,
-    SCALER_HQ3X,
-    SCALER_HQ4X,
 
-    SCALER_XBR2X,
-    SCALER_XBR3X,
-    SCALER_XBR4X,
+    SCALER_2X_HQX = SCALER_ENUM_FIRST,
+    SCALER_2X_XBR,
+
+    SCALER_3X_HQX,
+    SCALER_3X_XBR,
+
+    SCALER_4X_HQX,
+    SCALER_4X_XBR,
 
     SCALER_ENUM_LAST
 };
@@ -63,35 +65,35 @@ static void scalers_init(void) {
     hqxInit();
     xbr_init_data();
 
-    scalers[SCALER_HQ2X].scaler_function = &hq2x_32;
-    scalers[SCALER_HQ2X].scale_factor    = 2;
-    sprintf(scalers[SCALER_HQ2X].scaler_name, "HQ 2x");
+    scalers[SCALER_2X_HQX].scaler_function = &hq2x_32;
+    scalers[SCALER_2X_HQX].scale_factor    = 2;
+    sprintf(scalers[SCALER_2X_HQX].scaler_name, "2x HQx");
 
-    scalers[SCALER_HQ3X].scaler_function = &hq3x_32;
-    scalers[SCALER_HQ3X].scale_factor    = 3;
-    sprintf(scalers[SCALER_HQ3X].scaler_name, "HQ 3x");
+    scalers[SCALER_3X_HQX].scaler_function = &hq3x_32;
+    scalers[SCALER_3X_HQX].scale_factor    = 3;
+    sprintf(scalers[SCALER_3X_HQX].scaler_name, "3x HQx");
 
-    scalers[SCALER_HQ4X].scaler_function = &hq4x_32;
-    scalers[SCALER_HQ4X].scale_factor    = 4;
-    sprintf(scalers[SCALER_HQ4X].scaler_name, "HQ 4x");
+    scalers[SCALER_4X_HQX].scaler_function = &hq4x_32;
+    scalers[SCALER_4X_HQX].scale_factor    = 4;
+    sprintf(scalers[SCALER_4X_HQX].scaler_name, "4x HQx");
 
 
-    scalers[SCALER_XBR2X].scaler_function = &xbr_filter_xbr2x;
-    scalers[SCALER_XBR2X].scale_factor    = 2;
-    sprintf(scalers[SCALER_XBR2X].scaler_name, "XBR 2x");
+    scalers[SCALER_2X_XBR].scaler_function = &xbr_filter_xbr2x;
+    scalers[SCALER_2X_XBR].scale_factor    = 2;
+    sprintf(scalers[SCALER_2X_XBR].scaler_name, "2x XBR");
 
-    scalers[SCALER_XBR3X].scaler_function = &xbr_filter_xbr3x;
-    scalers[SCALER_XBR3X].scale_factor    = 3;
-    sprintf(scalers[SCALER_XBR3X].scaler_name, "XBR 3x");
+    scalers[SCALER_3X_XBR].scaler_function = &xbr_filter_xbr3x;
+    scalers[SCALER_3X_XBR].scale_factor    = 3;
+    sprintf(scalers[SCALER_3X_XBR].scaler_name, "3x XBR");
 
-    scalers[SCALER_XBR4X].scaler_function = &xbr_filter_xbr4x;
-    scalers[SCALER_XBR4X].scale_factor    = 4;
-    sprintf(scalers[SCALER_XBR4X].scaler_name, "XBR 4x");
+    scalers[SCALER_4X_XBR].scaler_function = &xbr_filter_xbr4x;
+    scalers[SCALER_4X_XBR].scale_factor    = 4;
+    sprintf(scalers[SCALER_4X_XBR].scaler_name, "4x XBR");
 
 
     // Now set the default scaler
     // TODO: accept last values for plugin so it remembers
-    scaler_mode = SCALER_HQ2X;
+    scaler_mode = SCALER_2X_HQX;
  }
 
 
