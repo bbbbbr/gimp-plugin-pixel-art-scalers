@@ -384,6 +384,8 @@ static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_s
                                          &x, &y, &width, &height))
         return;
 
+    // == START UNDO GROUPING
+    gimp_image_undo_group_start(gimp_item_get_image(drawable->drawable_id));
 
     // Resize image
     if (gimp_image_resize(gimp_drawable_get_image(drawable->drawable_id),
@@ -427,6 +429,9 @@ static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_s
         // Free the extra resized drawable
         gimp_drawable_detach (resized_drawable);
     }
+
+    // == END GROUPING
+    gimp_image_undo_group_end(gimp_item_get_image(drawable->drawable_id));
 }
 
 
