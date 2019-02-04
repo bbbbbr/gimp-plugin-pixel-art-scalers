@@ -30,7 +30,8 @@ plugin_pixel_art_scalers_SOURCES = \
 	hqx_init.c \
 	hq2x.c \
 	hq4x.c \
-	xbr.c
+	xbr.c \
+	filter_scalex.c
 
 
 
