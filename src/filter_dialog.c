@@ -21,8 +21,9 @@
 #define BYTE_SIZE_RGBA_4BPP 4
 #define BYTE_SIZE_RGB_3BPP  3
 
-#define ALPHA_MASK_OPAQUE  0xFF  // When adding alpha mask byte, set to 100% opaque / visible
+#define ALPHA_MASK_OPAQUE   0xFF  // When adding alpha mask byte, set to 100% opaque / visible
 
+#define SCALER_STR_MAX      30
 
 extern const char PLUG_IN_PROCEDURE[];
 extern const char PLUG_IN_ROLE[];
@@ -58,7 +59,7 @@ enum scaler_list {
 typedef struct {
     void (*scaler_function)(uint32_t*, uint32_t*, int, int);
     int  scale_factor;
-    char scaler_name[20];
+    char scaler_name[SCALER_STR_MAX];
 } scaler_info;
 
 static scaler_info scalers[SCALER_ENUM_LAST];
@@ -74,43 +75,43 @@ static void scalers_init(void) {
     // HQX
     scalers[SCALER_2X_HQX].scaler_function = &hq2x_32;
     scalers[SCALER_2X_HQX].scale_factor    = 2;
-    sprintf(scalers[SCALER_2X_HQX].scaler_name, "2x HQx");
+    snprintf(scalers[SCALER_2X_HQX].scaler_name, SCALER_STR_MAX, "2x HQx");
 
     scalers[SCALER_3X_HQX].scaler_function = &hq3x_32;
     scalers[SCALER_3X_HQX].scale_factor    = 3;
-    sprintf(scalers[SCALER_3X_HQX].scaler_name, "3x HQx");
+    snprintf(scalers[SCALER_3X_HQX].scaler_name, SCALER_STR_MAX, "3x HQx");
 
     scalers[SCALER_4X_HQX].scaler_function = &hq4x_32;
     scalers[SCALER_4X_HQX].scale_factor    = 4;
-    sprintf(scalers[SCALER_4X_HQX].scaler_name, "4x HQx");
+    snprintf(scalers[SCALER_4X_HQX].scaler_name, SCALER_STR_MAX, "4x HQx");
 
 
     // XBR
     scalers[SCALER_2X_XBR].scaler_function = &xbr_filter_xbr2x;
     scalers[SCALER_2X_XBR].scale_factor    = 2;
-    sprintf(scalers[SCALER_2X_XBR].scaler_name, "2x XBR");
+    snprintf(scalers[SCALER_2X_XBR].scaler_name, SCALER_STR_MAX, "2x XBR");
 
     scalers[SCALER_3X_XBR].scaler_function = &xbr_filter_xbr3x;
     scalers[SCALER_3X_XBR].scale_factor    = 3;
-    sprintf(scalers[SCALER_3X_XBR].scaler_name, "3x XBR");
+    snprintf(scalers[SCALER_3X_XBR].scaler_name, SCALER_STR_MAX, "3x XBR");
 
     scalers[SCALER_4X_XBR].scaler_function = &xbr_filter_xbr4x;
     scalers[SCALER_4X_XBR].scale_factor    = 4;
-    sprintf(scalers[SCALER_4X_XBR].scaler_name, "4x XBR");
+    snprintf(scalers[SCALER_4X_XBR].scaler_name, SCALER_STR_MAX, "4x XBR");
 
 
     // SCALEX
     scalers[SCALER_2X_SCALEX].scaler_function = &filter_scalex_2x;
     scalers[SCALER_2X_SCALEX].scale_factor    = 2;
-    sprintf(scalers[SCALER_2X_SCALEX].scaler_name, "2x ScaleX");
+    snprintf(scalers[SCALER_2X_SCALEX].scaler_name, SCALER_STR_MAX, "2x ScaleX");
 
     scalers[SCALER_3X_SCALEX].scaler_function = &filter_scalex_3x;
     scalers[SCALER_3X_SCALEX].scale_factor    = 3;
-    sprintf(scalers[SCALER_3X_SCALEX].scaler_name, "3x ScaleX");
+    snprintf(scalers[SCALER_3X_SCALEX].scaler_name, SCALER_STR_MAX, "3x ScaleX");
 
     scalers[SCALER_4X_SCALEX].scaler_function = &filter_scalex_4x;
     scalers[SCALER_4X_SCALEX].scale_factor    = 4;
-    sprintf(scalers[SCALER_4X_SCALEX].scaler_name, "4x ScaleX");
+    snprintf(scalers[SCALER_4X_SCALEX].scaler_name, SCALER_STR_MAX, "4x ScaleX");
 
 
     // Now set the default scaler
