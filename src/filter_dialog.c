@@ -48,6 +48,7 @@ enum scaler_list {
 
     SCALER_4X_HQX,
     SCALER_4X_XBR,
+    SCALER_4X_SCALEX,
 
     SCALER_ENUM_LAST
 };
@@ -106,6 +107,11 @@ static void scalers_init(void) {
     scalers[SCALER_3X_SCALEX].scaler_function = &filter_scalex_3x;
     scalers[SCALER_3X_SCALEX].scale_factor    = 3;
     sprintf(scalers[SCALER_3X_SCALEX].scaler_name, "3x ScaleX");
+
+    scalers[SCALER_4X_SCALEX].scaler_function = &filter_scalex_4x;
+    scalers[SCALER_4X_SCALEX].scale_factor    = 4;
+    sprintf(scalers[SCALER_4X_SCALEX].scaler_name, "4x ScaleX");
+
 
     // Now set the default scaler
     // TODO: accept last values for plugin so it remembers
