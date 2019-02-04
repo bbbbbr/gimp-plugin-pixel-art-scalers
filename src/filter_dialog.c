@@ -413,7 +413,7 @@ static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_s
     gimp_image_undo_group_start(gimp_item_get_image(drawable->drawable_id));
 
     // Resize image
-    if (gimp_image_resize(gimp_drawable_get_image(drawable->drawable_id),
+    if (gimp_image_resize(gimp_item_get_image(drawable->drawable_id),
                           width * scale_factor,
                           height * scale_factor,
                           0,0))
@@ -421,7 +421,7 @@ static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_s
 
         // Resize the current layer to match the resized image
         gimp_layer_resize_to_image_size( gimp_image_get_active_layer(
-                                           gimp_drawable_get_image(drawable->drawable_id) ) );
+                                           gimp_item_get_image(drawable->drawable_id) ) );
 
 
         // Get a new drawable from the resized layer/image

@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "filter_scalex.h"
+
 static const char TRUE  = 1;
 static const char FALSE = 0;
 static const char BYTE_SIZE_RGBA_4BPP = 4; // RGBA 4BPP
@@ -24,6 +26,8 @@ static const char BYTE_SIZE_RGBA_4BPP = 4; // RGBA 4BPP
 void pixel_copy(uint8_t *, uint32_t, uint8_t *, uint32_t,int);
 uint8_t pixel_eql(uint8_t *, uint32_t, uint32_t, int);
 void scale_scale2x(uint8_t *, uint32_t *, int, int, int, int, int);
+void scale_scale3x(uint8_t *, uint32_t *, int, int, int, int, int);
+void scale_scale4x(uint8_t *, uint32_t *, int, int, int, int, int);
 
 
 // Copy a pixel from src to dst
