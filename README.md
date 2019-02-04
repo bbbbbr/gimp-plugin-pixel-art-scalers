@@ -6,6 +6,7 @@ GIMP plugin for rescaling images using Pixel Art Scalers
 Supported image scalers:
  * HQX (hq2x, hq3x, hq4x)
  * XBR (xbr2x, xbr3x, xbr4x)
+ * ScaleX (scale2x, scale3x, scale4x)
 
 ![GIMP Image Editor using Pixel Art Scalers Plugin](https://raw.githubusercontent.com/bbbbbr/gimp-plugin-pixel-art-scalers/master/info/gimp-plugin-pixel-art-scalers.png)
 
@@ -13,7 +14,7 @@ Supported image scalers:
  OS binaries available for:
  * Linux
  * Windows
- 
+
 
 ## Acknowledgement:
   * For an overview of the scalers see: https://en.wikipedia.org/wiki/Pixel-art_scaling_algorithms
