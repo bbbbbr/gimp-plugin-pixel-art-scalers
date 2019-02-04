@@ -19,7 +19,7 @@ Supported image scalers:
   * For an overview of the scalers see: https://en.wikipedia.org/wiki/Pixel-art_scaling_algorithms
   * HQX: https://web.archive.org/web/20130925011623/http://www.hiend3d.com/hq2x.html
   * XBR: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 , https://github.com/Treeki/libxbr-standalone
-
+  * Scale2x/3x : https://www.scale2x.it/ , https://opengameart.org/forumtopic/pixelart-scaler-scalenx-and-eaglenx-for-gimp
 
 ## Quick instructions:
 
