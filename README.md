@@ -11,9 +11,13 @@ Supported image scalers:
 ![GIMP Image Editor using Pixel Art Scalers Plugin](https://raw.githubusercontent.com/bbbbbr/gimp-plugin-pixel-art-scalers/master/info/gimp-plugin-pixel-art-scalers.png)
 
 
- OS binaries available for:
+OS binaries available for:
  * Linux
  * Windows
+
+
+Hints:
+ * You can resize the plugin dialog for a larger preview window
 
 
 ## Acknowledgement:
