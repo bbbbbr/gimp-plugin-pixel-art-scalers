@@ -17,7 +17,9 @@ OS binaries available for:
 
 
 Hints:
+ * The plugin is located in : Menu -> Filter -> Render -> Pixel Art Scalers
  * You can resize the plugin dialog for a larger preview window
+ * Currently it only operates on RGB and RGBA images
 
 
 ## Acknowledgement:
