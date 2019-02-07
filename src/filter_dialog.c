@@ -124,10 +124,32 @@ static void scalers_init(void) {
  static   GtkWidget *preview_scaled;
 
 
-
 /*******************************************************/
 /*                    Dialog                           */
 /*******************************************************/
+
+
+// TODO: remove globals
+  GtkWidget * g_preview;
+  GimpDrawable * g_drawable;
+
+
+// GimpPreviewArea inherits GtkWidget::size-allocate from GtkDrawingArea
+// Preview-area resets buffer on size change so it needs a redraw
+gboolean preview_scaled_size_allocate_event(GtkWidget *widget, GdkEvent *event, GtkWidget *window)
+{
+    if (widget == NULL)
+      return 1; // Exit, failed
+
+    // TODO: Change this to just re-paint the cached size & image
+    // IF (! =NULL)
+    pixel_art_scalers_run (g_drawable, (GimpPreview *) g_preview);
+
+    return FALSE;
+}
+
+
+
 
 
 gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
@@ -136,6 +158,7 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   GtkWidget *main_vbox;
   GtkWidget *preview_hbox;
   GtkWidget *preview;
+  GtkWidget * scaled_preview_window;
   GtkWidget *combo_scaler_mode;
   gboolean   run;
   gint       idx;
@@ -156,8 +179,6 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
                             NULL);
 
 // Resize to show more of scaled preview by default (this sets MIN size)
-// Width = N + (N * 2) (source * scaled side by side)
-// Height = N + 50     (scaled above buttons)
 gtk_widget_set_size_request (dialog,
                              500,
                              400);
@@ -187,26 +208,45 @@ gtk_widget_set_size_request (dialog,
   gtk_widget_show (preview_hbox);
 
 
-    // Add a scaled preview area
-    // --> NOTE: Packing the scaled preview area BEFORE the preview source window
-    //           is a hackish-solution to redraw problems whenever the scaled
-    //           preview area was updated. It may have to do with signal order
-    //           and timing, along with redraw order.
-    //           --> TLDR; Swapping the packing order may require fixing that bug
+    // Create source image preview and scaled preview areas
+    // along with a scrolled window area for the scaled preview
+    preview = gimp_drawable_preview_new (drawable, NULL);
     preview_scaled = gimp_preview_area_new();
-    gtk_box_pack_start (GTK_BOX (preview_hbox), preview_scaled, TRUE, TRUE, 0);
+    scaled_preview_window = gtk_scrolled_window_new (NULL, NULL);
+
+
+    // Display the source image preview area, set it to not expand if window grows
+    gtk_box_pack_start (GTK_BOX (preview_hbox), preview, FALSE, TRUE, 0);
+    gtk_widget_show (preview);
+
+
+    // Automatic scrollbars for scrolled preview window
+    gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scaled_preview_window),
+                                    GTK_POLICY_AUTOMATIC,
+                                    GTK_POLICY_AUTOMATIC);
+
+    // Add the scaled preview to the scrolled window
+    // and then display them both (with auto-resize)
+    gtk_scrolled_window_add_with_viewport((GtkScrolledWindow *)scaled_preview_window,
+                                              preview_scaled);
+    gtk_box_pack_start (GTK_BOX (preview_hbox), scaled_preview_window, TRUE, TRUE, 0);
+    gtk_widget_show (scaled_preview_window);
     gtk_widget_show (preview_scaled);
 
 
-     // Add source image preview area, set it to not expand if window grows
-    preview = gimp_drawable_preview_new (drawable, NULL);
-    gtk_box_pack_start (GTK_BOX (preview_hbox), preview, FALSE, TRUE, 0);
-    gtk_widget_show (preview);
-    // Wire up preview redraw to call the pixel scaler filter
+    // Wire up source image preview redraw to call the pixel scaler filter
     g_signal_connect_swapped (preview,
                               "invalidated",
                               G_CALLBACK (pixel_art_scalers_run),
                               drawable);
+
+    // resize scaled preview -> destroys scaled preview buffer -> resizes scroll window -> size-allocate -> redraw preview buffer
+    // TODO: remove global calls here
+    // Wire up the scaled preview to redraw when ever it's size changes
+    // This fixes the scrolled window inhibiting the redraw when the size changed
+    g_preview = preview;
+    g_drawable = drawable;
+    g_signal_connect(preview_scaled, "size-allocate", G_CALLBACK(preview_scaled_size_allocate_event), (gpointer)scaled_preview_window);
 
 
 
@@ -262,11 +302,9 @@ static void on_combo_scaler_mode_changed (GtkComboBox *combo, gpointer callback_
         if (!(g_strcmp0(selected_string, scalers[i].scaler_name)))
           scaler_mode = i;
     }
+
+    // TODO: move the preview_scaled resize call into here?
 }
-
-
-
-
 
 
 
@@ -277,6 +315,7 @@ static void on_combo_scaler_mode_changed (GtkComboBox *combo, gpointer callback_
 // TODO: This would be less brittle and easier to understand if
 //       preview vs. apply was either seperated out or abstracted.
 
+static glong preview_last_size;
 
 void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 {
@@ -298,6 +337,28 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     if (preview) {
         gimp_preview_get_position (preview, &x, &y);
         gimp_preview_get_size (preview, &width, &height);
+
+        gint cur_width, cur_height;
+        gtk_widget_get_size_request (preview_scaled, &cur_width, &cur_height);
+        scale_factor = scalers[scaler_mode].scale_factor;
+
+        if ((cur_width * cur_height) !=
+                (width * scale_factor * height * scale_factor)) {
+            printf("resize new=%d,%d  cur=%d,%d\n", width * scale_factor, height * scale_factor, cur_width, cur_height);
+            gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
+
+        // when set_size_request and then draw are called repeatedly on a preview_area
+        // it results causes redraw glitching in the surrounding scrolled_window region
+        // Calling set_max_size appears to fix this
+        // (though it may be treating the symptom and not the cause of the glitching)
+        gimp_preview_area_set_max_size(GIMP_PREVIEW_AREA (preview_scaled),
+                                        width * scale_factor,
+                                        height * scale_factor);
+
+
+        }
+
+
     }
     else if (! gimp_drawable_mask_intersect (drawable->drawable_id,
                                              &x, &y, &width, &height)) {
@@ -363,6 +424,11 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
         // Draw scaled image onto preview area
         //   NOTE: requires access to a glboal var (preview_scaled)
         //   Preview expects 4BPP RGBA
+
+//        gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
+
+    printf("---> redraw new=%d,%d\n", width * scale_factor, height * scale_factor);
+
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
                                 0, 0,
                                 width * scale_factor,
