@@ -344,7 +344,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
         if ((cur_width * cur_height) !=
                 (width * scale_factor * height * scale_factor)) {
-            printf("resize new=%d,%d  cur=%d,%d\n", width * scale_factor, height * scale_factor, cur_width, cur_height);
+//            printf("resize new=%d,%d  cur=%d,%d\n", width * scale_factor, height * scale_factor, cur_width, cur_height);
             gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
 
         // when set_size_request and then draw are called repeatedly on a preview_area
@@ -427,7 +427,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
 //        gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
 
-    printf("---> redraw new=%d,%d\n", width * scale_factor, height * scale_factor);
+//    printf("---> redraw new=%d,%d\n", width * scale_factor, height * scale_factor);
 
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
                                 0, 0,
