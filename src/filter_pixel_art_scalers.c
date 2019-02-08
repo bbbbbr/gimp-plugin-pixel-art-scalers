@@ -170,6 +170,8 @@ static void run(const gchar      * name,
         }
   }
 
+  pixel_art_scalers_release_resources();
+
   return_values[0].data.d_status = status;
 
   gimp_drawable_detach (drawable);

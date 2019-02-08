@@ -10,146 +10,46 @@
 
 #include "filter_dialog.h"
 
-#include <stdint.h>
-
 // Filter includes
 #include "hqx.h"
 #include "xbr_filters.h"
 #include "filter_scalex.h"
 
 
-#define BYTE_SIZE_RGBA_4BPP 4
-#define BYTE_SIZE_RGB_3BPP  3
-
-#define ALPHA_MASK_OPAQUE   0xFF  // When adding alpha mask byte, set to 100% opaque / visible
-
-#define SCALER_STR_MAX      30
 
 extern const char PLUG_IN_PROCEDURE[];
 extern const char PLUG_IN_ROLE[];
 extern const char PLUG_IN_BINARY[];
 
-static void filter_apply (int, uint32_t *, uint32_t *, int, int);
 static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
+
 static void on_combo_scaler_mode_changed (GtkComboBox *, gpointer);
+gboolean preview_scaled_size_allocate_event(GtkWidget *, GdkEvent *, GtkWidget *);
 
-static void buffer_add_alpha_byte(guchar *, glong);
-static void buffer_remove_alpha_byte(guchar *, glong);
-
-enum scaler_list {
-    SCALER_ENUM_FIRST = 0,
-
-    SCALER_2X_HQX = SCALER_ENUM_FIRST,
-    SCALER_2X_XBR,
-    SCALER_2X_SCALEX,
-
-    SCALER_3X_HQX,
-    SCALER_3X_XBR,
-    SCALER_3X_SCALEX,
-
-    SCALER_4X_HQX,
-    SCALER_4X_XBR,
-    SCALER_4X_SCALEX,
-
-    SCALER_ENUM_LAST
-};
-
-
-
-typedef struct {
-    void (*scaler_function)(uint32_t*, uint32_t*, int, int);
-    int  scale_factor;
-    char scaler_name[SCALER_STR_MAX];
-} scaler_info;
+void scaler_apply(int, uint32_t *, uint32_t *, int, int);
+void buffer_add_alpha_byte(guchar *, glong);
+void buffer_remove_alpha_byte(guchar *, glong);
+void scalers_init(void);
+gint scaled_output_check_reapply_scalers(gint, gint, gint);
+void scaled_output_check_reallocate(gint, gint, gint);
+void scaled_output_init(void);
+void scaler_mode_set(gint);
 
 static scaler_info scalers[SCALER_ENUM_LAST];
 
-static gint scaler_mode;
-
-static void scalers_init(void) {
-
-    // Init HQX scaler library
-    hqxInit();
-    xbr_init_data();
-
-    // HQX
-    scalers[SCALER_2X_HQX].scaler_function = &hq2x_32;
-    scalers[SCALER_2X_HQX].scale_factor    = 2;
-    snprintf(scalers[SCALER_2X_HQX].scaler_name, SCALER_STR_MAX, "2x HQx");
-
-    scalers[SCALER_3X_HQX].scaler_function = &hq3x_32;
-    scalers[SCALER_3X_HQX].scale_factor    = 3;
-    snprintf(scalers[SCALER_3X_HQX].scaler_name, SCALER_STR_MAX, "3x HQx");
-
-    scalers[SCALER_4X_HQX].scaler_function = &hq4x_32;
-    scalers[SCALER_4X_HQX].scale_factor    = 4;
-    snprintf(scalers[SCALER_4X_HQX].scaler_name, SCALER_STR_MAX, "4x HQx");
-
-
-    // XBR
-    scalers[SCALER_2X_XBR].scaler_function = &xbr_filter_xbr2x;
-    scalers[SCALER_2X_XBR].scale_factor    = 2;
-    snprintf(scalers[SCALER_2X_XBR].scaler_name, SCALER_STR_MAX, "2x XBR");
-
-    scalers[SCALER_3X_XBR].scaler_function = &xbr_filter_xbr3x;
-    scalers[SCALER_3X_XBR].scale_factor    = 3;
-    snprintf(scalers[SCALER_3X_XBR].scaler_name, SCALER_STR_MAX, "3x XBR");
-
-    scalers[SCALER_4X_XBR].scaler_function = &xbr_filter_xbr4x;
-    scalers[SCALER_4X_XBR].scale_factor    = 4;
-    snprintf(scalers[SCALER_4X_XBR].scaler_name, SCALER_STR_MAX, "4x XBR");
-
-
-    // SCALEX
-    scalers[SCALER_2X_SCALEX].scaler_function = &filter_scalex_2x;
-    scalers[SCALER_2X_SCALEX].scale_factor    = 2;
-    snprintf(scalers[SCALER_2X_SCALEX].scaler_name, SCALER_STR_MAX, "2x ScaleX");
-
-    scalers[SCALER_3X_SCALEX].scaler_function = &filter_scalex_3x;
-    scalers[SCALER_3X_SCALEX].scale_factor    = 3;
-    snprintf(scalers[SCALER_3X_SCALEX].scaler_name, SCALER_STR_MAX, "3x ScaleX");
-
-    scalers[SCALER_4X_SCALEX].scaler_function = &filter_scalex_4x;
-    scalers[SCALER_4X_SCALEX].scale_factor    = 4;
-    snprintf(scalers[SCALER_4X_SCALEX].scaler_name, SCALER_STR_MAX, "4x ScaleX");
-
-
-    // Now set the default scaler
-    // TODO: accept last values for plugin so it remembers
-    scaler_mode = SCALER_2X_HQX;
- }
-
 
 // TODO: there are probably better ways to do this than a global var
- static   GtkWidget *preview_scaled;
+// TODO: remove globals
+static gint scaler_mode;
+static glong preview_last_size;
+static GtkWidget * preview_scaled;
+static scaled_output_info scaled_output;
+
 
 
 /*******************************************************/
 /*                    Dialog                           */
 /*******************************************************/
-
-
-// TODO: remove globals
-  GtkWidget * g_preview;
-  GimpDrawable * g_drawable;
-
-
-// GimpPreviewArea inherits GtkWidget::size-allocate from GtkDrawingArea
-// Preview-area resets buffer on size change so it needs a redraw
-gboolean preview_scaled_size_allocate_event(GtkWidget *widget, GdkEvent *event, GtkWidget *window)
-{
-    if (widget == NULL)
-      return 1; // Exit, failed
-
-    // TODO: Change this to just re-paint the cached size & image
-    // IF (! =NULL)
-    pixel_art_scalers_run (g_drawable, (GimpPreview *) g_preview);
-
-    return FALSE;
-}
-
-
-
 
 
 gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
@@ -244,8 +144,6 @@ gtk_widget_set_size_request (dialog,
     // TODO: remove global calls here
     // Wire up the scaled preview to redraw when ever it's size changes
     // This fixes the scrolled window inhibiting the redraw when the size changed
-    g_preview = preview;
-    g_drawable = drawable;
     g_signal_connect(preview_scaled, "size-allocate", G_CALLBACK(preview_scaled_size_allocate_event), (gpointer)scaled_preview_window);
 
 
@@ -283,7 +181,31 @@ gtk_widget_set_size_request (dialog,
 
   gtk_widget_destroy (dialog);
 
+
   return run;
+}
+
+
+// GimpPreviewArea inherits GtkWidget::size-allocate from GtkDrawingArea
+// Preview-area resets buffer on size change so it needs a redraw
+gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event, GtkWidget *window)
+{
+    if (widget == NULL)
+      return 1; // Exit, failed
+
+    // Redraw the scaled preview if it's available
+    if ( (scaled_output.p_scaledbuf != NULL) &&
+         (scaled_output.valid_image == TRUE) ) {
+        gimp_preview_area_draw (GIMP_PREVIEW_AREA (widget),  // Calling widget should be preview_scaled
+                                0, 0,
+                                scaled_output.width,
+                                scaled_output.height,
+                                GIMP_RGBA_IMAGE,
+                                (guchar *) scaled_output.p_scaledbuf,
+                                scaled_output.width * BYTE_SIZE_RGBA_4BPP);
+    }
+
+    return FALSE;
 }
 
 
@@ -300,10 +222,98 @@ static void on_combo_scaler_mode_changed (GtkComboBox *combo, gpointer callback_
     for (i=0; i < SCALER_ENUM_LAST; i++) {
         // If the mode string matched the one in the combo, select it as the current mode
         if (!(g_strcmp0(selected_string, scalers[i].scaler_name)))
-          scaler_mode = i;
+          scaler_mode_set(i);
     }
+}
 
-    // TODO: move the preview_scaled resize call into here?
+
+
+void scaler_mode_set(gint scaler_mode_new) {
+    scaler_mode = scaler_mode_new;
+}
+
+
+gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint y_new) {
+
+  gint result;
+
+  result = ((scaled_output.scaler_mode != scaler_mode_new) ||
+            (scaled_output.x != x_new) ||
+            (scaled_output.y != y_new) ||
+            (scaled_output.valid_image == FALSE));
+
+  scaled_output.x = x_new;
+  scaled_output.y = y_new;
+
+  return (result);
+}
+
+
+// Update output buffer size and re-allocate if needed
+void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint height_new)
+{
+    if ((scale_factor_new != scaled_output.scale_factor) ||
+        ((width_new  * scale_factor_new) != scaled_output.width) ||
+        ((height_new * scale_factor_new) != scaled_output.height) ||
+        (scaled_output.p_scaledbuf == NULL)) {
+
+        // Update the buffer size and re-allocate. The x uint32_t is for RGBA buffer size
+        scaled_output.width        = width_new  * scale_factor_new;
+        scaled_output.height       = height_new * scale_factor_new;
+        scaled_output.scale_factor = scale_factor_new;
+        scaled_output.size_bytes = scaled_output.width * scaled_output.height * BYTE_SIZE_RGBA_4BPP;
+
+        if (scaled_output.p_scaledbuf)
+            g_free(scaled_output.p_scaledbuf);
+
+        // 32 bit to ensure alignment, divide size since it's in BYTES
+        scaled_output.p_scaledbuf = (uint32_t *) g_new (guint32, scaled_output.size_bytes / BYTE_SIZE_RGBA_4BPP);
+
+        // Invalidate the image
+        scaled_output.valid_image = FALSE;
+    }
+}
+
+
+void scaled_output_init()
+{
+      scaled_output.p_scaledbuf  = NULL;
+      scaled_output.width        = 0;
+      scaled_output.height       = 0;
+      scaled_output.x            = 0;
+      scaled_output.y            = 0;
+      scaled_output.scale_factor = 0;
+      scaled_output.scaler_mode  = 0;
+      scaled_output.size_bytes   = 0;
+      scaled_output.bpp          = 0;
+      scaled_output.valid_image  = FALSE;
+}
+
+
+
+void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint width_new, gint height_new, gint scale_factor_new)
+{
+    gint width_current, height_current;
+
+    // Get current size for scaled preview area
+    gtk_widget_get_size_request (preview_scaled, &width_current, &height_current);
+
+    // Only resize if the width, height or scaling changed
+    if ( (width_current  != (width_new  * scale_factor_new)) ||
+         (height_current != (height_new * scale_factor_new)) )
+    {
+        // Resize scaled preview area
+        gtk_widget_set_size_request (preview_scaled, width_new * scale_factor_new, height_new * scale_factor_new);
+
+        // when set_size_request and then draw are called repeatedly on a preview_area
+        // it results causes redraw glitching in the surrounding scrolled_window region
+        // Calling set_max_size appears to fix this
+        // (though it may be treating the symptom and not the cause of the glitching)
+        gimp_preview_area_set_max_size(GIMP_PREVIEW_AREA (preview_scaled),
+                                       width_new * scale_factor_new,
+                                       height_new * scale_factor_new);
+
+    }
 }
 
 
@@ -315,50 +325,26 @@ static void on_combo_scaler_mode_changed (GtkComboBox *combo, gpointer callback_
 // TODO: This would be less brittle and easier to understand if
 //       preview vs. apply was either seperated out or abstracted.
 
-static glong preview_last_size;
-
 void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 {
     GimpPixelRgn src_rgn;
     gint         bpp;
-    // gint has_alpha;
     gint         width, height;
-
     gint         x, y;
-    guint scale_factor;
+    guint        scale_factor;
 
-    uint32_t     * p_srcbuf = NULL;
-    uint32_t     * p_scaledbuf = NULL;
+    uint32_t   * p_srcbuf = NULL;
 
     glong        srcbuf_size = 0;
-    glong        scaledbuf_size = 0;
+
+    scale_factor = scalers[scaler_mode].scale_factor;
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
         gimp_preview_get_position (preview, &x, &y);
         gimp_preview_get_size (preview, &width, &height);
 
-        gint cur_width, cur_height;
-        gtk_widget_get_size_request (preview_scaled, &cur_width, &cur_height);
-        scale_factor = scalers[scaler_mode].scale_factor;
-
-        if ((cur_width * cur_height) !=
-                (width * scale_factor * height * scale_factor)) {
-            printf("resize new=%d,%d  cur=%d,%d\n", width * scale_factor, height * scale_factor, cur_width, cur_height);
-            gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
-
-        // when set_size_request and then draw are called repeatedly on a preview_area
-        // it results causes redraw glitching in the surrounding scrolled_window region
-        // Calling set_max_size appears to fix this
-        // (though it may be treating the symptom and not the cause of the glitching)
-        gimp_preview_area_set_max_size(GIMP_PREVIEW_AREA (preview_scaled),
-                                        width * scale_factor,
-                                        height * scale_factor);
-
-
-        }
-
-
+        dialog_scaled_preview_check_resize( preview_scaled, width, height, scale_factor);
     }
     else if (! gimp_drawable_mask_intersect (drawable->drawable_id,
                                              &x, &y, &width, &height)) {
@@ -367,94 +353,77 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
     // Get bit depth and alpha mask status
     bpp = drawable->bpp;
-    // has_alpha = gimp_drawable_has_alpha (drawable->drawable_id);
 
-    // Allocate a working buffer to copy the source image into - always RGBA 4BPP
-    srcbuf_size = width * height * BYTE_SIZE_RGBA_4BPP;
-    // TODO: WARNING Shouldn this be gint to ensure correct uint32_t byte alignment?
-    p_srcbuf = (uint32_t *) g_new (guchar, srcbuf_size);
+    // Allocate output buffer for upscaled image
+    scaled_output_check_reallocate(scale_factor, width, height);
 
+    if (scaled_output_check_reapply_scalers(scaler_mode, x, y)) {
 
-    // FALSE, FALSE : region will be used to read the actual drawable datas
-    // Initialize source pixel region with drawable
-    gimp_pixel_rgn_init (&src_rgn,
-                         drawable,
-                         x, y,
-                         width, height,
-                         FALSE, FALSE);
+        // GET THE SOURCE IMAGE
+        // TODO: move this to a function?
 
-    // Copy source image to working buffer
-    gimp_pixel_rgn_get_rect (&src_rgn,
-                             (guchar *) p_srcbuf,
-                             x, y, width, height);
+        // Allocate a working buffer to copy the source image into - always RGBA 4BPP
+        // 32 bit to ensure alignment, divide size since it's in BYTES
+        srcbuf_size = width * height * BYTE_SIZE_RGBA_4BPP;
+        p_srcbuf = (uint32_t *) g_new (guint32, srcbuf_size / BYTE_SIZE_RGBA_4BPP);
 
 
-    // Add alpha channel byte if needed (scalers expect 4BPP RGBA)
-    if (bpp == BYTE_SIZE_RGB_3BPP)  // i.e. !has_alpha
-        buffer_add_alpha_byte((guchar *) p_srcbuf, srcbuf_size);
+        // FALSE, FALSE : region will be used to read the actual drawable datas
+        // Initialize source pixel region with drawable
+        gimp_pixel_rgn_init (&src_rgn,
+                             drawable,
+                             x, y,
+                             width, height,
+                             FALSE, FALSE);
 
-    // ====== BEGIN SCALER ======
-    // TODO: move to function
-    // TODO: cache output to speed up redraws when output window gets panned around
+        // Copy source image to working buffer
+        gimp_pixel_rgn_get_rect (&src_rgn,
+                                 (guchar *) p_srcbuf,
+                                 x, y, width, height);
 
-// TODO: local scaler mode = GLOBAL?
-    scale_factor = scalers[scaler_mode].scale_factor;
+        // Add alpha channel byte to source buffer if needed (scalers expect 4BPP RGBA)
+        if (bpp == BYTE_SIZE_RGB_3BPP)  // i.e. !has_alpha
+            buffer_add_alpha_byte((guchar *) p_srcbuf, srcbuf_size);
 
 
-    // Allocate output buffer for the results
-    // guchar = unsigned 8 bits, guint32 = unsigned 32 bits, uint32_t = unsigned 32 bits
-    scaledbuf_size = width * scale_factor * height * scale_factor * sizeof(uint32_t);
-    // TODO: WARNING is this overallocating? Above uses sizeof uint32_t, which seems to imply guchar, maybe reduce allocation size
-    p_scaledbuf = (uint32_t *) g_new (guint, scaledbuf_size);
+        // APPLY THE SCALER
 
-    if (p_scaledbuf) {
-
-        // Expects 4BPP RGBA in p_srcbuf (outputs same in p_scaledbuf)
-        filter_apply (scaler_mode,
-                      p_srcbuf,
-                      p_scaledbuf,
-                      (int) width, (int) height);
+        // Expects 4BPP RGBA in p_srcbuf, outputs same to p_scaledbuf
+        scaler_apply(scaler_mode,
+                     p_srcbuf,
+                     scaled_output.p_scaledbuf,
+                     (int) width, (int) height);
     }
-
-    // ====== END SCALER ======
-
     // Filter is done, apply the update
     if (preview) {
 
         // Draw scaled image onto preview area
-        //   NOTE: requires access to a glboal var (preview_scaled)
-        //   Preview expects 4BPP RGBA
-
-//        gtk_widget_set_size_request (preview_scaled, width * scale_factor, height * scale_factor);
-
-    printf("---> redraw new=%d,%d\n", width * scale_factor, height * scale_factor);
+        // Expects 4BPP RGBA
 
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
                                 0, 0,
-                                width * scale_factor,
-                                height * scale_factor,
+                                scaled_output.width,
+                                scaled_output.height,
                                 GIMP_RGBA_IMAGE,
-                                (guchar *) p_scaledbuf,
-                                width * scale_factor * BYTE_SIZE_RGBA_4BPP);
+                                (guchar *) scaled_output.p_scaledbuf,
+                                scaled_output.width * BYTE_SIZE_RGBA_4BPP);
     }
     else
     {
-
-        // Remove the alpha byte that was added if the source image was 3BPP RGB
-        if (bpp == 3)  // i.e. !has_alpha
-            buffer_remove_alpha_byte((guchar *) p_scaledbuf, scaledbuf_size);
-
+        // Remove the alpha byte from the scaled output if the source image was 3BPP RGB
+        if ((bpp == BYTE_SIZE_RGB_3BPP) & (scaled_output.bpp != BYTE_SIZE_RGB_3BPP)) { // i.e. !has_alpha
+            buffer_remove_alpha_byte((guchar *) scaled_output.p_scaledbuf, scaled_output.size_bytes);
+            scaled_output.bpp = BYTE_SIZE_RGB_3BPP;
+        }
         // Apply image result with full resize
         resize_image_and_apply_changes(drawable,
-                                       (guchar *)p_scaledbuf,
-                                       scale_factor);
+                                       (guchar *) scaled_output.p_scaledbuf,
+                                       scaled_output.scale_factor);
     }
 
     // Free the working buffer
-    g_free (p_srcbuf);
-
-    if (p_scaledbuf)
-        g_free(p_scaledbuf);
+    if (p_srcbuf)
+      g_free (p_srcbuf);
 }
 
 
@@ -465,7 +434,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 // * GimpDrawable  : from source image
 // * guchar * buffer : scaled output
 // * guint    scale_factor : image scale multiplier
-static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbuf, guint scale_factor)
+void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbuf, guint scale_factor)
 {
     GimpPixelRgn  dest_rgn;
     gint          x,y, width, height;
@@ -494,7 +463,6 @@ static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_s
         resized_drawable = gimp_drawable_get( gimp_image_get_active_drawable(
                                                 gimp_item_get_image(drawable->drawable_id) ) );
 
-
         // Initialize destination pixel region with drawable
         // TRUE,  TRUE  : region will be used to write to the shadow tiles
         //                i.e. make changes that will be written back to source tiles
@@ -512,6 +480,7 @@ static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_s
                                  width * scale_factor,
                                  height * scale_factor);
 
+
         // Apply the changes to the image (merge shadow, update drawable)
         gimp_drawable_flush (resized_drawable);
         gimp_drawable_merge_shadow (resized_drawable->drawable_id, TRUE);
@@ -527,7 +496,10 @@ static void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_s
 
 
 
-static void filter_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_destbuf, int width, int height) {
+void scaler_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_destbuf, int width, int height) {
+
+    if ((p_srcbuf == NULL) || (p_destbuf == NULL))
+        return;
 
     if (scaler_mode < SCALER_ENUM_LAST) {
 
@@ -536,11 +508,15 @@ static void filter_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_dest
                                               (uint32_t*) p_destbuf,
                                                     (int) width,
                                                     (int) height);
+        scaled_output.bpp = BYTE_SIZE_RGBA_4BPP;
+        scaled_output.scaler_mode = scaler_mode;
+        scaled_output.valid_image = TRUE;
     }
 }
 
 
-static void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
+
+void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 
     // Iterates through the buffer backward, from END to START
     // and remaps from RGB to RGBA (adds alpha byte)
@@ -563,7 +539,8 @@ static void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 }
 
 
-static void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
+
+void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 
     // Iterates through the buffer forward, from START to END
     // and remaps from RGBA to RGB (removes alpha byte)
@@ -585,3 +562,66 @@ static void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 }
 
 
+
+// Release the scaled output buffer
+void pixel_art_scalers_release_resources() {
+
+  if (scaled_output.p_scaledbuf)
+      g_free(scaled_output.p_scaledbuf);
+}
+
+
+
+void scalers_init(void) {
+
+    // Init HQX scaler library
+    hqxInit();
+    xbr_init_data();
+    scaled_output_init();
+
+    // HQX
+    scalers[SCALER_2X_HQX].scaler_function = &hq2x_32;
+    scalers[SCALER_2X_HQX].scale_factor    = 2;
+    snprintf(scalers[SCALER_2X_HQX].scaler_name, SCALER_STR_MAX, "2x HQx");
+
+    scalers[SCALER_3X_HQX].scaler_function = &hq3x_32;
+    scalers[SCALER_3X_HQX].scale_factor    = 3;
+    snprintf(scalers[SCALER_3X_HQX].scaler_name, SCALER_STR_MAX, "3x HQx");
+
+    scalers[SCALER_4X_HQX].scaler_function = &hq4x_32;
+    scalers[SCALER_4X_HQX].scale_factor    = 4;
+    snprintf(scalers[SCALER_4X_HQX].scaler_name, SCALER_STR_MAX, "4x HQx");
+
+
+    // XBR
+    scalers[SCALER_2X_XBR].scaler_function = &xbr_filter_xbr2x;
+    scalers[SCALER_2X_XBR].scale_factor    = 2;
+    snprintf(scalers[SCALER_2X_XBR].scaler_name, SCALER_STR_MAX, "2x XBR");
+
+    scalers[SCALER_3X_XBR].scaler_function = &xbr_filter_xbr3x;
+    scalers[SCALER_3X_XBR].scale_factor    = 3;
+    snprintf(scalers[SCALER_3X_XBR].scaler_name, SCALER_STR_MAX, "3x XBR");
+
+    scalers[SCALER_4X_XBR].scaler_function = &xbr_filter_xbr4x;
+    scalers[SCALER_4X_XBR].scale_factor    = 4;
+    snprintf(scalers[SCALER_4X_XBR].scaler_name, SCALER_STR_MAX, "4x XBR");
+
+
+    // SCALEX
+    scalers[SCALER_2X_SCALEX].scaler_function = &filter_scalex_2x;
+    scalers[SCALER_2X_SCALEX].scale_factor    = 2;
+    snprintf(scalers[SCALER_2X_SCALEX].scaler_name, SCALER_STR_MAX, "2x ScaleX");
+
+    scalers[SCALER_3X_SCALEX].scaler_function = &filter_scalex_3x;
+    scalers[SCALER_3X_SCALEX].scale_factor    = 3;
+    snprintf(scalers[SCALER_3X_SCALEX].scaler_name, SCALER_STR_MAX, "3x ScaleX");
+
+    scalers[SCALER_4X_SCALEX].scaler_function = &filter_scalex_4x;
+    scalers[SCALER_4X_SCALEX].scale_factor    = 4;
+    snprintf(scalers[SCALER_4X_SCALEX].scaler_name, SCALER_STR_MAX, "4x ScaleX");
+
+
+    // Now set the default scaler
+    // TODO: accept last values for plugin so it remembers
+    scaler_mode = SCALER_2X_HQX;
+ }
