@@ -134,7 +134,7 @@ gtk_widget_set_size_request (dialog,
     combo_scaler_mode = gtk_combo_box_text_new ();
 
     for (idx = SCALER_ENUM_FIRST; idx < SCALER_ENUM_LAST; idx++)
-        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scalers[idx].scaler_name);
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scaler_name_get(idx));
 
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo_scaler_mode), SCALER_ENUM_FIRST);
 
@@ -146,7 +146,7 @@ gtk_widget_set_size_request (dialog,
     g_signal_connect (combo_scaler_mode,
                       "changed",
                       G_CALLBACK (on_combo_scaler_mode_changed),
-                      &scaler_mode);
+                      NULL);
 
     // Then connect a second signal to trigger a preview update
     g_signal_connect_swapped (combo_scaler_mode,
@@ -171,19 +171,23 @@ gtk_widget_set_size_request (dialog,
 // Preview-area resets buffer on size change so it needs a redraw
 gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event, GtkWidget *window)
 {
+    scaled_output_info * scaled_output;
+
+    scaled_output = scaled_info_get();
+
     if (widget == NULL)
       return 1; // Exit, failed
 
     // Redraw the scaled preview if it's available
-    if ( (scaled_output.p_scaledbuf != NULL) &&
-         (scaled_output.valid_image == TRUE) ) {
+    if ( (scaled_output->p_scaledbuf != NULL) &&
+         (scaled_output->valid_image == TRUE) ) {
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (widget),  // Calling widget should be preview_scaled
                                 0, 0,
-                                scaled_output.width,
-                                scaled_output.height,
+                                scaled_output->width,
+                                scaled_output->height,
                                 GIMP_RGBA_IMAGE,
-                                (guchar *) scaled_output.p_scaledbuf,
-                                scaled_output.width * BYTE_SIZE_RGBA_4BPP);
+                                (guchar *) scaled_output->p_scaledbuf,
+                                scaled_output->width * BYTE_SIZE_RGBA_4BPP);
     }
 
     return FALSE;
@@ -195,15 +199,18 @@ gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event,
 // callback_data not used currently
 static void on_combo_scaler_mode_changed (GtkComboBox *combo, gpointer callback_data)
 {
+    gint idx;
+    scaled_output_info * scaled_output;
+
+    scaled_output = scaled_info_get();
 
     // TODO: stop using global var scaler_mode?
     gchar *selected_string = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(combo) );
-    gint i;
 
-    for (i=0; i < SCALER_ENUM_LAST; i++) {
+    for (idx=0; idx < SCALER_ENUM_LAST; idx++) {
         // If the mode string matched the one in the combo, select it as the current mode
-        if (!(g_strcmp0(selected_string, scalers[i].scaler_name)))
-          scaler_mode_set(i);
+        if (!(g_strcmp0(selected_string, scaler_name_get(idx))))
+          scaler_mode_set(idx);
     }
 }
 
@@ -251,12 +258,13 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     gint         width, height;
     gint         x, y;
     guint        scale_factor;
-
     uint32_t   * p_srcbuf = NULL;
-
     glong        srcbuf_size = 0;
+    scaled_output_info * scaled_output;
 
-    scale_factor = scalers[scaler_mode].scale_factor;
+    scaled_output = scaled_info_get();
+
+    scale_factor = scaler_scale_factor_get( scaler_mode_get() );
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
@@ -276,7 +284,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     // Allocate output buffer for upscaled image
     scaled_output_check_reallocate(scale_factor, width, height);
 
-    if (scaled_output_check_reapply_scalers(scaler_mode, x, y)) {
+    if (scaled_output_check_reapply_scalers(scaler_mode_get(), x, y)) {
 
         // GET THE SOURCE IMAGE
         // TODO: move this to a function?
@@ -308,9 +316,9 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
         // APPLY THE SCALER
 
         // Expects 4BPP RGBA in p_srcbuf, outputs same to p_scaledbuf
-        scaler_apply(scaler_mode,
+        scaler_apply(scaler_mode_get(),
                      p_srcbuf,
-                     scaled_output.p_scaledbuf,
+                     scaled_output->p_scaledbuf,
                      (int) width, (int) height);
     }
     // Filter is done, apply the update
@@ -321,23 +329,23 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
                                 0, 0,
-                                scaled_output.width,
-                                scaled_output.height,
+                                scaled_output->width,
+                                scaled_output->height,
                                 GIMP_RGBA_IMAGE,
-                                (guchar *) scaled_output.p_scaledbuf,
-                                scaled_output.width * BYTE_SIZE_RGBA_4BPP);
+                                (guchar *) scaled_output->p_scaledbuf,
+                                scaled_output->width * BYTE_SIZE_RGBA_4BPP);
     }
     else
     {
         // Remove the alpha byte from the scaled output if the source image was 3BPP RGB
-        if ((bpp == BYTE_SIZE_RGB_3BPP) & (scaled_output.bpp != BYTE_SIZE_RGB_3BPP)) { // i.e. !has_alpha
-            buffer_remove_alpha_byte((guchar *) scaled_output.p_scaledbuf, scaled_output.size_bytes);
-            scaled_output.bpp = BYTE_SIZE_RGB_3BPP;
+        if ((bpp == BYTE_SIZE_RGB_3BPP) & (scaled_output->bpp != BYTE_SIZE_RGB_3BPP)) { // i.e. !has_alpha
+            buffer_remove_alpha_byte((guchar *) scaled_output->p_scaledbuf, scaled_output->size_bytes);
+            scaled_output->bpp = BYTE_SIZE_RGB_3BPP;
         }
         // Apply image result with full resize
         resize_image_and_apply_changes(drawable,
-                                       (guchar *) scaled_output.p_scaledbuf,
-                                       scaled_output.scale_factor);
+                                       (guchar *) scaled_output->p_scaledbuf,
+                                       scaled_output->scale_factor);
     }
 
     // Free the working buffer

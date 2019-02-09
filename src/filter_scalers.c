@@ -1,19 +1,11 @@
 // filter_scalers.c
 
-
-#include <stdio.h>
-#include <string.h>
-
-#include <libgimp/gimp.h>
-#include <libgimp/gimpui.h>
-
-#include "filte_scalers.h"
+#include "filter_scalers.h"
 
 // Filter includes
 #include "hqx.h"
 #include "xbr_filters.h"
 #include "filter_scalex.h"
-
 
 static scaler_info scalers[SCALER_ENUM_LAST];
 
@@ -21,8 +13,31 @@ static scaled_output_info scaled_output;
 static gint scaler_mode;
 
 
+
+const char * scaler_name_get(gint scaler_index) {
+
+    return (scalers[scaler_index].scaler_name);
+}
+
+
+gint scaler_scale_factor_get(gint scaler_index) {
+
+    return (scalers[scaler_mode].scale_factor);
+}
+
+
 void scaler_mode_set(gint scaler_mode_new) {
     scaler_mode = scaler_mode_new;
+}
+
+
+gint scaler_mode_get() {
+    return (scaler_mode);
+}
+
+
+scaled_output_info * scaled_info_get() {
+    return &scaled_output;
 }
 
 
