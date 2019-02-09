@@ -3,6 +3,8 @@ Gimp Pixel Art Scalers Plugin
 
 GIMP plugin for rescaling images using Pixel Art Scalers
 
+These scalers are able to resize graphics in a way that avoids both bluring and pixelation, while also preserving the look and feel of the image. They are commonly used for upscaling pixel art from console games when run in an emulator. They can be useful in other realms too.
+
 Supported image scalers:
  * HQX (hq2x, hq3x, hq4x)
  * XBR (xbr2x, xbr3x, xbr4x)
