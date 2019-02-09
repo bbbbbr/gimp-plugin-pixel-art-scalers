@@ -8,6 +8,7 @@
 
 //#include "filter_pixel_art_scalers.h"
 #include "filter_dialog.h"
+#include "filter_scalers.h"
 
 
 
@@ -112,6 +113,9 @@ static void run(const gchar      * name,
     // return_values[0].data.d_status = GIMP_PDB_SUCCESS;
     return_values[0].data.d_status = status;
 
+
+    // Initialize the scalers
+    scalers_init();
 
 
   switch (run_mode)
