@@ -26,6 +26,7 @@ libexec_PROGRAMS = plugin_pixel_art_scalers
 plugin_pixel_art_scalers_SOURCES = \
 	filter_pixel_art_scalers.c \
 	filter_dialog.c \
+	filter_scalers.c \
 	hq3x.c \
 	hqx_init.c \
 	hq2x.c \
