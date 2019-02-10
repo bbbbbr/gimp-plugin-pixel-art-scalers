@@ -141,13 +141,13 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
     gtk_misc_set_alignment(GTK_MISC(settings_scaler_label), 1.0f, 0.5f);
 
     // Add a Combo box for the SCALER MODE
-    // then add entries for the scaler types and set default
+    // then add entries for the scaler types and then set default
     settings_scaler_combo = gtk_combo_box_text_new ();
 
     for (idx = SCALER_ENUM_FIRST; idx < SCALER_ENUM_LAST; idx++)
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(settings_scaler_combo), scaler_name_get(idx));
 
-    gtk_combo_box_set_active(GTK_COMBO_BOX(settings_scaler_combo), SCALER_ENUM_FIRST);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(settings_scaler_combo), scaler_mode_get() );
 
 
     // Attach the label and combo to the table and show them all

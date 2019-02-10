@@ -31,22 +31,18 @@ GimpPlugInInfo PLUG_IN_INFO = {
     run
 };
 
-/*
-static PixelArtScalerVals cvals =
+typedef struct
 {
-  1  // scaler_type
-};
-*/
+  gint  scaler_mode;
+} PluginPixelArtScalerVals;
 
-/*
-// TODO
-static CartoonVals cvals =
+
+// Default settings for semi-persistant plugin config
+static PluginPixelArtScalerVals plugin_config_vals =
 {
-  7.0,  // mask_radius
-  1.0,  // threshold
-  0.2   // pct_black
+  0  // scaler_mode, default is HQ2X
 };
-*/
+
 
 
 
@@ -59,10 +55,8 @@ static void query(void)
     {
         { GIMP_PDB_INT32,    "run-mode",    "The run mode { RUN-INTERACTIVE (0), RUN-NONINTERACTIVE (1) }" },
         { GIMP_PDB_IMAGE,    "image",       "Input image (unused)" },
-        { GIMP_PDB_DRAWABLE, "drawable",    "Input drawable" }
-        //,
-        //{ GIMP_PDB_FLOAT,    "mask-radius", "Cartoon mask radius (radius of pixel neighborhood)" },
-        //{ GIMP_PDB_FLOAT,    "pct-black",   "Percentage of darkened pixels to set to black (0.0 - 1.0)" }
+        { GIMP_PDB_DRAWABLE, "drawable",    "Input drawable" },
+        { GIMP_PDB_INT32,    "scalar-mode", "Scaler mode to use for up-scaling the image (0-N)" }
     };
 
 
@@ -121,9 +115,9 @@ static void run(const gchar      * name,
   switch (run_mode)
     {
     case GIMP_RUN_INTERACTIVE:
-      //  Possibly retrieve data
-      // TODO
-      // gimp_get_data (PLUG_IN_PROCEDURE, &cvals);
+      //  Try to retrieve plugin settings, then apply them
+      gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
+      scaler_mode_set(plugin_config_vals.scaler_mode);
 
       //  First acquire information with a dialog
       if (! pixel_art_scalers_dialog (drawable))
@@ -131,15 +125,15 @@ static void run(const gchar      * name,
       break;
 
     case GIMP_RUN_NONINTERACTIVE:
-      // TODO
-      // cvals.mask_radius = param[3].data.d_float;
-      // cvals.pct_black   = param[4].data.d_float;
+      // Read in non-interactive mode plug settings, then apply them
+      plugin_config_vals.scaler_mode = param[3].data.d_int32;
+      scaler_mode_set(plugin_config_vals.scaler_mode);
       break;
 
     case GIMP_RUN_WITH_LAST_VALS:
-      //  Possibly retrieve data
-    // TODO
-     // gimp_get_data (PLUG_IN_PROCEDURE, &cvals);
+     //  Try to retrieve plugin settings, then apply them
+     gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
+     scaler_mode_set(plugin_config_vals.scaler_mode);
       break;
 
     default:
@@ -160,9 +154,10 @@ static void run(const gchar      * name,
           if (run_mode != GIMP_RUN_NONINTERACTIVE)
             gimp_displays_flush ();
 
-          //  Store data
-          //if (run_mode == GIMP_RUN_INTERACTIVE)
-            //gimp_set_data (PLUG_IN_PROC, &cvals, sizeof (CartoonVals));
+          // Retrieve and then save plugin config settings
+          if (run_mode == GIMP_RUN_INTERACTIVE)
+            plugin_config_vals.scaler_mode = scaler_mode_get();
+            gimp_set_data (PLUG_IN_PROCEDURE, &plugin_config_vals, sizeof (PluginPixelArtScalerVals));
         }
       else
         {
