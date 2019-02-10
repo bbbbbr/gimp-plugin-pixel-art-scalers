@@ -6,6 +6,7 @@
 #include "hqx.h"
 #include "xbr_filters.h"
 #include "scaler_scalex.h"
+#include "scaler_nearestneighbor.h"
 
 static scaler_info scalers[SCALER_ENUM_LAST];
 
@@ -224,6 +225,18 @@ void scalers_init(void) {
     scalers[SCALER_4X_SCALEX].scale_factor    = 4;
     snprintf(scalers[SCALER_4X_SCALEX].scaler_name, SCALER_STR_MAX, "4x ScaleX");
 
+    // NEAREST
+    scalers[SCALER_2X_NEAREST].scaler_function = &scaler_nearest_2x;
+    scalers[SCALER_2X_NEAREST].scale_factor    = 2;
+    snprintf(scalers[SCALER_2X_NEAREST].scaler_name, SCALER_STR_MAX, "2x Nearest");
+
+    scalers[SCALER_3X_NEAREST].scaler_function = &scaler_nearest_3x;
+    scalers[SCALER_3X_NEAREST].scale_factor    = 3;
+    snprintf(scalers[SCALER_3X_NEAREST].scaler_name, SCALER_STR_MAX, "3x Nearest");
+
+    scalers[SCALER_4X_NEAREST].scaler_function = &scaler_nearest_4x;
+    scalers[SCALER_4X_NEAREST].scale_factor    = 4;
+    snprintf(scalers[SCALER_4X_NEAREST].scaler_name, SCALER_STR_MAX, "4x Nearest");
 
     // Now set the default scaler
     // TODO: accept last values for plugin so it remembers
