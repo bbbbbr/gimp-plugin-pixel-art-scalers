@@ -20,7 +20,7 @@ extern const char PLUG_IN_BINARY[];
 
 static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
 
-static void on_combo_scaler_mode_changed (GtkComboBox *, gpointer);
+static void on_settings_scaler_combo_changed (GtkComboBox *, gpointer);
 gboolean preview_scaled_size_allocate_event(GtkWidget *, GdkEvent *, GtkWidget *);
 
 
@@ -41,9 +41,14 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   GtkWidget *dialog;
   GtkWidget *main_vbox;
   GtkWidget *preview_hbox;
+  GtkWidget *settings_hbox;
   GtkWidget *preview;
   GtkWidget * scaled_preview_window;
-  GtkWidget *combo_scaler_mode;
+
+  GtkWidget *settings_table;
+  GtkWidget *settings_scaler_combo;
+  GtkWidget *settings_scaler_label;
+
   gboolean   run;
   gint       idx;
 
@@ -59,10 +64,10 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
                             NULL);
 
-// Resize to show more of scaled preview by default (this sets MIN size)
-gtk_widget_set_size_request (dialog,
-                             500,
-                             400);
+  // Resize to show more of scaled preview by default (this sets MIN size)
+  gtk_widget_set_size_request (dialog,
+                               500,
+                               400);
 
 
   gtk_dialog_set_alternative_button_order (GTK_DIALOG (dialog),
@@ -128,28 +133,42 @@ gtk_widget_set_size_request (dialog,
     g_signal_connect(preview_scaled, "size-allocate", G_CALLBACK(preview_scaled_size_allocate_event), (gpointer)scaled_preview_window);
 
 
+    // Create 1 x 3 table for Settings, non-homogonous sizing, attach to main vbox
+    settings_table = gtk_table_new (1, 3, FALSE);
+    gtk_box_pack_start (GTK_BOX (main_vbox), settings_table, FALSE, FALSE, 0);
+    gtk_table_set_homogeneous(GTK_TABLE (settings_table), TRUE);
+
+    // Create label and right-align it
+    settings_scaler_label = gtk_label_new ("Scaler type:  " );
+    gtk_misc_set_alignment(GTK_MISC(settings_scaler_label), 1.0f, 0.5f);
 
     // Add a Combo box for the SCALER MODE
-    // then add entries for the scaler types
-    combo_scaler_mode = gtk_combo_box_text_new ();
+    // then add entries for the scaler types and set default
+    settings_scaler_combo = gtk_combo_box_text_new ();
 
     for (idx = SCALER_ENUM_FIRST; idx < SCALER_ENUM_LAST; idx++)
-        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_scaler_mode), scaler_name_get(idx));
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(settings_scaler_combo), scaler_name_get(idx));
 
-    gtk_combo_box_set_active(GTK_COMBO_BOX(combo_scaler_mode), SCALER_ENUM_FIRST);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(settings_scaler_combo), SCALER_ENUM_FIRST);
 
-    // Attach to table and show the combo
-    gtk_box_pack_start (GTK_BOX (main_vbox), combo_scaler_mode, FALSE, FALSE, 0);
-    gtk_widget_show (combo_scaler_mode);
+
+    // Attach the label and combo to the table and show them all
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_label, 1, 2, 0, 1); // Middle of table
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_combo, 2, 3, 0, 1); // Right side of table
+
+    gtk_widget_show (settings_table);
+    gtk_widget_show (settings_scaler_label);
+    gtk_widget_show (settings_scaler_combo);
+
 
     // Connect the changed signal to update the scaler mode
-    g_signal_connect (combo_scaler_mode,
+    g_signal_connect (settings_scaler_combo,
                       "changed",
-                      G_CALLBACK (on_combo_scaler_mode_changed),
+                      G_CALLBACK (on_settings_scaler_combo_changed),
                       NULL);
 
     // Then connect a second signal to trigger a preview update
-    g_signal_connect_swapped (combo_scaler_mode,
+    g_signal_connect_swapped (settings_scaler_combo,
                               "changed",
                               G_CALLBACK (gimp_preview_invalidate),
                               preview);
@@ -197,7 +216,7 @@ gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event,
 
 // Handler : "changed" for SCALER MODE combo box
 // callback_data not used currently
-static void on_combo_scaler_mode_changed (GtkComboBox *combo, gpointer callback_data)
+static void on_settings_scaler_combo_changed (GtkComboBox *combo, gpointer callback_data)
 {
     gint idx;
     scaled_output_info * scaled_output;
