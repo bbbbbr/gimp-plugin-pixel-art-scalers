@@ -18,8 +18,8 @@ extern const char PLUG_IN_PROCEDURE[];
 extern const char PLUG_IN_ROLE[];
 extern const char PLUG_IN_BINARY[];
 
+static void dialog_scaled_preview_check_resize(GtkWidget *, gint, gint, gint);
 static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
-
 static void on_settings_scaler_combo_changed (GtkComboBox *, gpointer);
 gboolean preview_scaled_size_allocate_event(GtkWidget *, GdkEvent *, GtkWidget *);
 

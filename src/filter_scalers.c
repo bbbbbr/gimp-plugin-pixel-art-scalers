@@ -31,12 +31,12 @@ void scaler_mode_set(gint scaler_mode_new) {
 }
 
 
-gint scaler_mode_get() {
+gint scaler_mode_get(void) {
     return (scaler_mode);
 }
 
 
-scaled_output_info * scaled_info_get() {
+scaled_output_info * scaled_info_get(void) {
     return &scaled_output;
 }
 
@@ -83,7 +83,7 @@ void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint 
 }
 
 
-void scaled_output_init()
+void scaled_output_init(void)
 {
       scaled_output.p_scaledbuf  = NULL;
       scaled_output.width        = 0;
@@ -168,7 +168,7 @@ void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 
 
 // Release the scaled output buffer
-void pixel_art_scalers_release_resources() {
+void pixel_art_scalers_release_resources(void) {
 
   if (scaled_output.p_scaledbuf)
       g_free(scaled_output.p_scaledbuf);
