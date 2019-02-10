@@ -5,7 +5,7 @@
 // Filter includes
 #include "hqx.h"
 #include "xbr_filters.h"
-#include "filter_scalex.h"
+#include "scaler_scalex.h"
 
 static scaler_info scalers[SCALER_ENUM_LAST];
 
@@ -212,15 +212,15 @@ void scalers_init(void) {
 
 
     // SCALEX
-    scalers[SCALER_2X_SCALEX].scaler_function = &filter_scalex_2x;
+    scalers[SCALER_2X_SCALEX].scaler_function = &scaler_scalex_2x;
     scalers[SCALER_2X_SCALEX].scale_factor    = 2;
     snprintf(scalers[SCALER_2X_SCALEX].scaler_name, SCALER_STR_MAX, "2x ScaleX");
 
-    scalers[SCALER_3X_SCALEX].scaler_function = &filter_scalex_3x;
+    scalers[SCALER_3X_SCALEX].scaler_function = &scaler_scalex_3x;
     scalers[SCALER_3X_SCALEX].scale_factor    = 3;
     snprintf(scalers[SCALER_3X_SCALEX].scaler_name, SCALER_STR_MAX, "3x ScaleX");
 
-    scalers[SCALER_4X_SCALEX].scaler_function = &filter_scalex_4x;
+    scalers[SCALER_4X_SCALEX].scaler_function = &scaler_scalex_4x;
     scalers[SCALER_4X_SCALEX].scale_factor    = 4;
     snprintf(scalers[SCALER_4X_SCALEX].scaler_name, SCALER_STR_MAX, "4x ScaleX");
 

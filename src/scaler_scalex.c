@@ -1,5 +1,5 @@
 //
-// filter_scalex.c
+// scaler_scalex.c
 //
 
 // ========================
@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "filter_scalex.h"
+#include "scaler_scalex.h"
 
 static const char TRUE  = 1;
 static const char FALSE = 0;
@@ -172,7 +172,7 @@ void scale_scale3x(uint8_t * src, uint32_t * ret_pos, int x, int y, int w, int h
 }
 
 
-void filter_scalex_2x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
+void scaler_scalex_2x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 {
     int       bpp;
     int       x, y;
@@ -201,7 +201,7 @@ void filter_scalex_2x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 
 
 
-void filter_scalex_3x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
+void scaler_scalex_3x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 {
     int       bpp;
     int       x, y;
@@ -238,13 +238,13 @@ void filter_scalex_3x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 
 
 // 4x is just 2x run twice
-void filter_scalex_4x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
+void scaler_scalex_4x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 {
     long       buffer_size_bytes_2x;
     uint32_t * p_tempbuf;
 
     // Apply the first 2x scaling
-    filter_scalex_2x(sp, dp, Xres, Yres);
+    scaler_scalex_2x(sp, dp, Xres, Yres);
 
     // Copy the 2x scaled image into a temp buffer
     // then scale it up 2x again
@@ -254,7 +254,7 @@ void filter_scalex_4x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
     memcpy(p_tempbuf, dp, buffer_size_bytes_2x);
 
     // Apply the second 2x scaling
-    filter_scalex_2x(p_tempbuf, dp, Xres * 2, Yres * 2);
+    scaler_scalex_2x(p_tempbuf, dp, Xres * 2, Yres * 2);
 
     free(p_tempbuf);
 }
