@@ -25,8 +25,6 @@ gboolean preview_scaled_size_allocate_event(GtkWidget *, GdkEvent *, GtkWidget *
 
 
 // TODO: there are probably better ways to do this than a global var
-// TODO: remove globals
-static glong preview_last_size;
 static GtkWidget * preview_scaled;
 
 
@@ -38,16 +36,15 @@ static GtkWidget * preview_scaled;
 
 gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 {
-  GtkWidget *dialog;
-  GtkWidget *main_vbox;
-  GtkWidget *preview_hbox;
-  GtkWidget *settings_hbox;
-  GtkWidget *preview;
+  GtkWidget * dialog;
+  GtkWidget * main_vbox;
+  GtkWidget * preview_hbox;
+  GtkWidget * preview;
   GtkWidget * scaled_preview_window;
 
-  GtkWidget *settings_table;
-  GtkWidget *settings_scaler_combo;
-  GtkWidget *settings_scaler_label;
+  GtkWidget * settings_table;
+  GtkWidget * settings_scaler_combo;
+  GtkWidget * settings_scaler_label;
 
   gboolean   run;
   gint       idx;
@@ -134,6 +131,7 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
 
     // Create 1 x 3 table for Settings, non-homogonous sizing, attach to main vbox
+    // TODO: Consider changing from a table to a grid
     settings_table = gtk_table_new (1, 3, FALSE);
     gtk_box_pack_start (GTK_BOX (main_vbox), settings_table, FALSE, FALSE, 0);
     gtk_table_set_homogeneous(GTK_TABLE (settings_table), TRUE);
@@ -219,12 +217,10 @@ gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event,
 static void on_settings_scaler_combo_changed (GtkComboBox *combo, gpointer callback_data)
 {
     gint idx;
-    scaled_output_info * scaled_output;
-
-    scaled_output = scaled_info_get();
+    gchar * selected_string;
 
     // TODO: stop using global var scaler_mode?
-    gchar *selected_string = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(combo) );
+    selected_string = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(combo) );
 
     for (idx=0; idx < SCALER_ENUM_LAST; idx++) {
         // If the mode string matched the one in the combo, select it as the current mode
@@ -236,7 +232,7 @@ static void on_settings_scaler_combo_changed (GtkComboBox *combo, gpointer callb
 
 
 
-void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint width_new, gint height_new, gint scale_factor_new)
+static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint width_new, gint height_new, gint scale_factor_new)
 {
     gint width_current, height_current;
 

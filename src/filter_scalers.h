@@ -64,7 +64,7 @@
     void scaler_mode_set(gint);
     gint scaler_mode_get(void);
 
-    scaled_output_info * scaled_info_get();
+    scaled_output_info * scaled_info_get(void);
 
     void scalers_init(void);
     void scaler_apply(int, uint32_t *, uint32_t *, int, int);
