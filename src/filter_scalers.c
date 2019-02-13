@@ -28,7 +28,10 @@ gint scaler_scale_factor_get(gint scaler_index) {
 
 
 void scaler_mode_set(gint scaler_mode_new) {
-    scaler_mode = scaler_mode_new;
+    // Don't update the mode if it's outside the allowed range
+    if ((scaler_mode_new >= SCALER_ENUM_FIRST) &&
+        (scaler_mode_new < SCALER_ENUM_LAST))
+        scaler_mode = scaler_mode_new;
 }
 
 
