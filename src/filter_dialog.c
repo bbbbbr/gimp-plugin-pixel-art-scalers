@@ -298,8 +298,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
     if (scaled_output_check_reapply_scalers(scaler_mode_get(), x, y)) {
 
-        // GET THE SOURCE IMAGE
-        // TODO: move this to a function?
+        // ====== GET THE SOURCE IMAGE ======
 
         // Allocate a working buffer to copy the source image into - always RGBA 4BPP
         // 32 bit to ensure alignment, divide size since it's in BYTES
@@ -325,7 +324,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
             buffer_add_alpha_byte((guchar *) p_srcbuf, srcbuf_size);
 
 
-        // APPLY THE SCALER
+        // ====== APPLY THE SCALER ======
 
         // Expects 4BPP RGBA in p_srcbuf, outputs same to p_scaledbuf
         scaler_apply(scaler_mode_get(),
