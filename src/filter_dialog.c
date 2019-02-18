@@ -274,9 +274,10 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
     glong        srcbuf_size = 0;
     scaled_output_info * scaled_output;
 
-    scaled_output = scaled_info_get();
 
+    scaled_output = scaled_info_get();
     scale_factor = scaler_scale_factor_get( scaler_mode_get() );
+
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
@@ -290,11 +291,13 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
         return;
     }
 
+
     // Get bit depth and alpha mask status
     bpp = drawable->bpp;
 
     // Allocate output buffer for upscaled image
     scaled_output_check_reallocate(scale_factor, width, height);
+
 
     if (scaled_output_check_reapply_scalers(scaler_mode_get(), x, y)) {
 
@@ -324,6 +327,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
             buffer_add_alpha_byte((guchar *) p_srcbuf, srcbuf_size);
 
 
+
         // ====== APPLY THE SCALER ======
 
         // Expects 4BPP RGBA in p_srcbuf, outputs same to p_scaledbuf
@@ -337,7 +341,6 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
         // Draw scaled image onto preview area
         // Expects 4BPP RGBA
-
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
                                 0, 0,
                                 scaled_output->width,
@@ -353,6 +356,7 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
             buffer_remove_alpha_byte((guchar *) scaled_output->p_scaledbuf, scaled_output->size_bytes);
             scaled_output->bpp = BYTE_SIZE_RGB_3BPP;
         }
+
         // Apply image result with full resize
         resize_image_and_apply_changes(drawable,
                                        (guchar *) scaled_output->p_scaledbuf,
