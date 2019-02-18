@@ -24,7 +24,7 @@ static void on_settings_scaler_combo_changed (GtkComboBox *, gpointer);
 gboolean preview_scaled_size_allocate_event(GtkWidget *, GdkEvent *, GtkWidget *);
 
 
-// TODO: there are probably better ways to do this than a global var
+// Widget for displaying the upscaled image preview
 static GtkWidget * preview_scaled;
 
 
@@ -124,14 +124,12 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
                               drawable);
 
     // resize scaled preview -> destroys scaled preview buffer -> resizes scroll window -> size-allocate -> redraw preview buffer
-    // TODO: remove global calls here
-    // Wire up the scaled preview to redraw when ever it's size changes
     // This fixes the scrolled window inhibiting the redraw when the size changed
     g_signal_connect(preview_scaled, "size-allocate", G_CALLBACK(preview_scaled_size_allocate_event), (gpointer)scaled_preview_window);
 
 
     // Create 1 x 3 table for Settings, non-homogonous sizing, attach to main vbox
-    // TODO: Consider changing from a table to a grid
+    // TODO: Consider changing from a table to a grid (tables are deprecated)
     settings_table = gtk_table_new (1, 3, FALSE);
     gtk_box_pack_start (GTK_BOX (main_vbox), settings_table, FALSE, FALSE, 0);
     gtk_table_set_homogeneous(GTK_TABLE (settings_table), TRUE);
@@ -219,7 +217,6 @@ static void on_settings_scaler_combo_changed (GtkComboBox *combo, gpointer callb
     gint idx;
     gchar * selected_string;
 
-    // TODO: stop using global var scaler_mode?
     selected_string = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(combo) );
 
     for (idx=0; idx < SCALER_ENUM_LAST; idx++) {

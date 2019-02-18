@@ -242,6 +242,5 @@ void scalers_init(void) {
     snprintf(scalers[SCALER_4X_NEAREST].scaler_name, SCALER_STR_MAX, "4x Nearest");
 
     // Now set the default scaler
-    // TODO: accept last values for plugin so it remembers
     scaler_mode = SCALER_2X_HQX;
  }
