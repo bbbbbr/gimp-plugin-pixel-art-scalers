@@ -172,6 +172,15 @@ void scale_scale3x(uint8_t * src, uint32_t * ret_pos, int x, int y, int w, int h
 }
 
 
+
+// scaler_scalex_2x
+//
+// Scales image in *sp up by 2x into *dp
+//
+// *sp : pointer to source uint32 buffer of Xres * Yres, 4BPP RGBA
+// *dp : pointer to output uint32 buffer of 2 * Xres * 2 * Yres, 4BPP RGBA
+// Xres, Yres: resolution of source image
+//
 void scaler_scalex_2x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 {
     int       bpp;
@@ -201,6 +210,14 @@ void scaler_scalex_2x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 
 
 
+// scaler_scalex_3x
+//
+// Scales image in *sp up by 3x into *dp
+//
+// *sp : pointer to source uint32 buffer of Xres * Yres, 4BPP RGBA
+// *dp : pointer to output uint32 buffer of 3 * Xres * 3 * Yres, 4BPP RGBA
+// Xres, Yres: resolution of source image
+//
 void scaler_scalex_3x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 {
     int       bpp;
@@ -237,7 +254,16 @@ void scaler_scalex_3x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 }
 
 
-// 4x is just 2x run twice
+
+// scaler_scalex_4x
+//
+// 4x is just the 2x scaler run twice
+// Scales image in *sp up by 4x into *dp
+//
+// *sp : pointer to source uint32 buffer of Xres * Yres, 4BPP RGBA
+// *dp : pointer to output uint32 buffer of 4 * Xres * 4 * Yres, 4BPP RGBA
+// Xres, Yres: resolution of source image
+//
 void scaler_scalex_4x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 {
     long       buffer_size_bytes_2x;

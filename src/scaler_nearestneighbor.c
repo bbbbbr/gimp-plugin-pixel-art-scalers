@@ -4,12 +4,9 @@
 
 // ========================
 //
-// ScaleNx pixel art scaler
+// Nearest Neighbor pixel art scaler
 //
-// See: https://www.scale2x.it/
-// Also: https://web.archive.org/web/20140331104356/http://gimpscripts.com/2014/01/scale2x-plus/
-//
-// Adapted to C (was python) from : https://opengameart.org/forumtopic/pixelart-scaler-scalenx-and-eaglenx-for-gimp
+// Simple upscaler
 //
 // ========================
 
@@ -68,17 +65,42 @@ void scaler_nearest_nx(uint32_t * sp,  uint32_t * dp, int Xres, int Yres, int sc
 }
 
 
-
+// scaler_nearest_2x
+//
+// Scales image in *sp up by 2x into *dp
+//
+// *sp : pointer to source uint32 buffer of Xres * Yres, 4BPP RGBA
+// *dp : pointer to output uint32 buffer of 2 * Xres * 2 * Yres, 4BPP RGBA
+// Xres, Yres: resolution of source image
+//
 void scaler_nearest_2x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 {
     scaler_nearest_nx(sp, dp, Xres, Yres, SCALE_NEAREST_2X);
 }
 
+
+// scaler_nearest_3x
+//
+// Scales image in *sp up by 3x into *dp
+//
+// *sp : pointer to source uint32 buffer of Xres * Yres, 4BPP RGBA
+// *dp : pointer to output uint32 buffer of 3 * Xres * 3 * Yres, 4BPP RGBA
+// Xres, Yres: resolution of source image
+//
 void scaler_nearest_3x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 {
     scaler_nearest_nx(sp, dp, Xres, Yres, SCALE_NEAREST_3X);
 }
 
+
+// scaler_nearest_4x
+//
+// Scales image in *sp up by 4x into *dp
+//
+// *sp : pointer to source uint32 buffer of Xres * Yres, 4BPP RGBA
+// *dp : pointer to output uint32 buffer of 4 * Xres * 4 * Yres, 4BPP RGBA
+// Xres, Yres: resolution of source image
+//
 void scaler_nearest_4x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 {
     scaler_nearest_nx(sp, dp, Xres, Yres, SCALE_NEAREST_4X);

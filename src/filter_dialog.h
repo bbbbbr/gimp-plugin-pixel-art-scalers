@@ -1,3 +1,7 @@
+//
+// filter_dialog.h
+//
+
 #ifndef __FILTER_DIALOG_H_
 #define __FILTER_DIALOG_H_
 

@@ -1,4 +1,14 @@
+//
 // filter_pixel_art_scalers.c
+//
+
+// ========================
+//
+// Registers filter with Gimp,
+// calls dialog and applies processing
+//
+// ========================
+
 
 #include <string.h>
 #include <stdint.h>
@@ -6,7 +16,6 @@
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
 
-//#include "filter_pixel_art_scalers.h"
 #include "filter_dialog.h"
 #include "filter_scalers.h"
 
@@ -17,13 +26,13 @@ const char PLUG_IN_ROLE[]      = "gimp-pixel-art-scalers";
 const char PLUG_IN_BINARY[]    = "plugin-pixel-art-scalers";
 
 
-// Predeclare our entrypoints
+// Predeclare entrypoints
 static void query(void);
 static void run(const gchar *, gint, const GimpParam *, gint *, GimpParam **);
 
 
 
-// Declare our plugin entry points
+// Declare plugin entry points
 GimpPlugInInfo PLUG_IN_INFO = {
     NULL,
     NULL,

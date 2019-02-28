@@ -1,4 +1,13 @@
+//
 // filter_dialog.c
+//
+
+// ========================
+//
+// Creates and shows plug-in dialog window,
+// displays preview of upscaled images
+//
+// ========================
 
 //#include "config.h"
 //#include <string.h>
@@ -30,10 +39,8 @@ static GtkWidget * preview_scaled;
 
 
 /*******************************************************/
-/*                    Dialog                           */
+/*               Main Plug-in Dialog                   */
 /*******************************************************/
-
-
 gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 {
   GtkWidget * dialog;
@@ -182,8 +189,14 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 }
 
 
-// GimpPreviewArea inherits GtkWidget::size-allocate from GtkDrawingArea
-// Preview-area resets buffer on size change so it needs a redraw
+
+// preview_scaled_size_allocate_event
+//
+// Handler for widget resize changes of the scaled output preview area
+//
+//   GimpPreviewArea inherits GtkWidget::size-allocate from GtkDrawingArea
+//   Preview-area resets buffer on size change so it needs a redraw
+//
 gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event, GtkWidget *window)
 {
     scaled_output_info * scaled_output;
@@ -210,9 +223,14 @@ gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event,
 
 
 
-// Handler : "changed" for SCALER MODE combo box
-// callback_data not used currently
-static void on_settings_scaler_combo_changed (GtkComboBox *combo, gpointer callback_data)
+// on_settings_scaler_combo_changed
+//
+// Handler for "changed" signal of SCALER MODE combo box
+// When the user changes the scaler type -> Update the scaler mode
+//
+//   callback_data not used currently
+//
+static void on_settings_scaler_combo_changed(GtkComboBox *combo, gpointer callback_data)
 {
     gint idx;
     gchar * selected_string;
@@ -228,7 +246,14 @@ static void on_settings_scaler_combo_changed (GtkComboBox *combo, gpointer callb
 
 
 
-
+// dialog_scaled_preview_check_resize
+//
+// Checks to see whether the scaled preview area needs
+// to be resized. Handles resizing if needed.
+//
+// Called from pixel_art_scalers_run() which is used for
+// previewing and final rendering of the selected scaler mode
+//
 static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint width_new, gint height_new, gint scale_factor_new)
 {
     gint width_current, height_current;
@@ -244,7 +269,7 @@ static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint 
         gtk_widget_set_size_request (preview_scaled, width_new * scale_factor_new, height_new * scale_factor_new);
 
         // when set_size_request and then draw are called repeatedly on a preview_area
-        // it results causes redraw glitching in the surrounding scrolled_window region
+        // it causes redraw glitching in the surrounding scrolled_window region
         // Calling set_max_size appears to fix this
         // (though it may be treating the symptom and not the cause of the glitching)
         gimp_preview_area_set_max_size(GIMP_PREVIEW_AREA (preview_scaled),
@@ -259,11 +284,19 @@ static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint 
 /*******************************************************/
 /*                    APPLY SCALER                     */
 /*******************************************************/
-
-// TODO: This would be less brittle and easier to understand if
-//       preview vs. apply was either seperated out or abstracted.
-
-void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
+//
+// pixel_art_scalers_run
+//
+// Previews and performs the final output rendering of
+// the selected scaler.
+//
+// Called from:
+// * gimp_preview_invalidate signal
+//   -> window redraw events
+//   -> user changed scaler type in dropdown combo box
+// * The end of filter_pixel_art_scalers.c (if user pressed "OK" to apply)
+//
+void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 {
     GimpPixelRgn src_rgn;
     gint         bpp;
@@ -371,11 +404,18 @@ void pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview)
 
 
 
-// Resizes image and then draws the newly scaled output onto it
+// resize_image_and_apply_changes
+//
+// Resizes image and then draws the newly scaled output onto it.
+// This is only for FINAL, NON-PREVIEW rendered output
+//
+// Called from pixel_art_scalers_run()
+//
 // Params:
-// * GimpDrawable  : from source image
-// * guchar * buffer : scaled output
+// * GimpDrawable          : from source image
+// * guchar * buffer       : the previously rendered scaled output
 // * guint    scale_factor : image scale multiplier
+//
 void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbuf, guint scale_factor)
 {
     GimpPixelRgn  dest_rgn;
@@ -389,7 +429,7 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbu
     // == START UNDO GROUPING
     gimp_image_undo_group_start(gimp_item_get_image(drawable->drawable_id));
 
-    // Resize image
+    // Resize source image
     if (gimp_image_resize(gimp_item_get_image(drawable->drawable_id),
                           width * scale_factor,
                           height * scale_factor,
@@ -401,7 +441,7 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbu
                                            gimp_item_get_image(drawable->drawable_id) ) );
 
 
-        // Get a new drawable from the resized layer/image
+        // Get a new drawable handle from the resized layer/image
         resized_drawable = gimp_drawable_get( gimp_image_get_active_drawable(
                                                 gimp_item_get_image(drawable->drawable_id) ) );
 
@@ -415,7 +455,8 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbu
                              height * scale_factor,
                              TRUE, TRUE);
 
-        // Copy the scaled buffer to the shadow image
+        // Copy the previously rendered scaled output buffer
+        // to the shadow image buffer in the drawable
         gimp_pixel_rgn_set_rect (&dest_rgn,
                                  (guchar *) p_scaledbuf,
                                  0,0,

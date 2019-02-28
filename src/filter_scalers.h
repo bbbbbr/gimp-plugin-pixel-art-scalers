@@ -1,4 +1,6 @@
+//
 // filter_scalers.h
+//
 
 #ifndef __FILTER_SCALERS_H_
 #define __FILTER_SCALERS_H_
@@ -20,6 +22,8 @@
     #define SCALER_STR_MAX      30
 
 
+    // List of available scalers
+    // Order here controls order in dialog drop-down selector
     enum scaler_list {
         SCALER_ENUM_FIRST = 0,
 
@@ -40,6 +44,7 @@
 
         SCALER_ENUM_LAST
     };
+
 
 
     typedef struct {

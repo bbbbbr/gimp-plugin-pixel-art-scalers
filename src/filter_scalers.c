@@ -1,4 +1,15 @@
+//
 // filter_scalers.c
+//
+
+// ========================
+//
+// Initializes scalers, applies them,
+// some utility functions, resource cleanup
+//
+// ========================
+
+
 
 #include "filter_scalers.h"
 
@@ -14,19 +25,36 @@ static scaled_output_info scaled_output;
 static gint scaler_mode;
 
 
-
+// scaler_name_get
+//
+// Returns string name of a scaler
+//
+// scaler_index: desired scaler (from the enum scaler_list)
+//
 const char * scaler_name_get(gint scaler_index) {
 
     return (scalers[scaler_index].scaler_name);
 }
 
 
+// scaler_scale_factor_get
+//
+// Returns scale factor (x 2, x 3, etc) of a scaler
+//
+// scaler_index: desired scaler (from the enum scaler_list)
+//
 gint scaler_scale_factor_get(gint scaler_index) {
 
     return (scalers[scaler_mode].scale_factor);
 }
 
 
+// scaler_mode_set
+//
+// Sets the current scaler mode
+// Preserves current mode across different callers
+// (filter_dialog.c,  filter_pixel_art_scalers.c)
+//
 void scaler_mode_set(gint scaler_mode_new) {
     // Don't update the mode if it's outside the allowed range
     if ((scaler_mode_new >= SCALER_ENUM_FIRST) &&
@@ -34,17 +62,36 @@ void scaler_mode_set(gint scaler_mode_new) {
         scaler_mode = scaler_mode_new;
 }
 
-
+// scaler_mode_get
+//
+// Returns the current scaler mode
+//
 gint scaler_mode_get(void) {
     return (scaler_mode);
 }
 
 
+// scaled_info_get
+//
+// Returns structure (type scaled_output_info)
+// with details about the current rendered
+// output image (scale mode, width, height, factor, etc)
+//
+// Used to assist with output caching
+//
 scaled_output_info * scaled_info_get(void) {
     return &scaled_output;
 }
 
 
+// scaled_output_check_reapply_scalers
+//
+// Checks whether the scaler needs to be re-applied
+// depending on whether the scaler mode or
+// x/y source image offset location have changed
+//
+// Used to assist with output caching
+//
 gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint y_new) {
 
   gint result;
@@ -61,7 +108,10 @@ gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint 
 }
 
 
+// scaled_output_check_reallocate
+//
 // Update output buffer size and re-allocate if needed
+//
 void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint height_new)
 {
     if ((scale_factor_new != scaled_output.scale_factor) ||
@@ -87,6 +137,10 @@ void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint 
 }
 
 
+// scaled_output_init
+//
+// Initialize rendered output shared structure
+//
 void scaled_output_init(void)
 {
       scaled_output.p_scaledbuf  = NULL;
@@ -103,7 +157,11 @@ void scaled_output_init(void)
 
 
 
-
+// scaler_apply
+//
+// Calls selected scaler function
+// Updates valid_image to assist with caching
+//
 void scaler_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_destbuf, int width, int height) {
 
     if ((p_srcbuf == NULL) || (p_destbuf == NULL))
@@ -124,6 +182,11 @@ void scaler_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_destbuf, in
 
 
 
+// buffer_add_alpha_byte
+//
+// Utility function to convert 3BPP RGB to 4BPP RGBA
+// by inserting a fourth (alpha channel) byte after every 3 bytes
+//
 void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 
     // Iterates through the buffer backward, from END to START
@@ -147,7 +210,11 @@ void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 }
 
 
-
+// buffer_remove_alpha_byte
+//
+// Utility function to convert 4BPP RGBA to 3BPP RGB
+// by removing the fourth (alpha channel) byte after every 3 bytes
+//
 void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 
     // Iterates through the buffer forward, from START to END
@@ -171,7 +238,12 @@ void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 
 
 
-// Release the scaled output buffer
+// pixel_art_scalers_release_resources
+//
+// Release the scaled output buffer.
+// Should be called only at the very
+// end of the plugin shutdown (not on dialog close)
+//
 void pixel_art_scalers_release_resources(void) {
 
   if (scaled_output.p_scaledbuf)
@@ -179,7 +251,11 @@ void pixel_art_scalers_release_resources(void) {
 }
 
 
-
+// scalers_init
+//
+// Populate the shared list of available scalers with their names
+// calling functions and scale factors.
+//
 void scalers_init(void) {
 
     // Init HQX scaler library
@@ -227,6 +303,7 @@ void scalers_init(void) {
     scalers[SCALER_4X_SCALEX].scaler_function = &scaler_scalex_4x;
     scalers[SCALER_4X_SCALEX].scale_factor    = 4;
     snprintf(scalers[SCALER_4X_SCALEX].scaler_name, SCALER_STR_MAX, "4x ScaleX");
+
 
     // NEAREST
     scalers[SCALER_2X_NEAREST].scaler_function = &scaler_nearest_2x;
