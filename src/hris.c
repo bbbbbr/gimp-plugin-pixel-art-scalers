@@ -14,47 +14,20 @@
  *
  */
 
+#include "common_ris.h"
 #include "hris.h"
-
-char ByteClamp(int c)
-{
-    char buff[3] = {(char)c, 255, 0};
-    return buff[ (c < 0) + ((unsigned)c > 255) ];
-}
-
-ARGBpixel ARGBtoPixel(uint32_t targb)
-{
-    ARGBpixel tp;
-    tp.c[0] = (uint8_t)((targb & maskA) >> 24);
-    tp.c[1] = (uint8_t)((targb & maskR) >> 16);
-    tp.c[2] = (uint8_t)((targb & maskG) >> 8);
-    tp.c[3] = (uint8_t)(targb & maskB);
-
-    return tp;
-}
-
-uint32_t PixeltoARGB(ARGBpixel tp)
-{
-    uint32_t targb;
-
-    targb = tp.c[0] << 24 | tp.c[1] << 16 | tp.c[2] << 8 | tp.c[3];
-
-    return targb;
-}
 
 // Upscale by a factor of N from source (sp) to dest (dp)
 // Expects 32 bit alignment (RGBA 4BPP) for both source and dest pointers
 void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode)
 {
     int bpp = BYTE_SIZE_RGBA_4BPP;
-    int i, j, d, k, deststep;
+    int i, j, d, k, l, deststep;
     int prevline2, prevline, nextline, nextline2;
     uint32_t wt;
     ARGBpixel w[25];
     ARGBpixel wr[9];
     uint8_t *dest = (uint8_t *) dp;
-    uint8_t *dest2 = (uint8_t *) dp;
-    uint8_t *dest3 = (uint8_t *) dp;
 
     double imx;
     double b11, b12, b13, b21, b22, b23, b31, b32, b33;
@@ -69,7 +42,7 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
 
     deststep = Xres * scale_mode * bpp;
 
-    if (scale_mode == 2)
+    if (scale_mode == SCALE_HRIS_2X)
     {
         k0[0] = 0.750;
         k0[1] = 0.250;
@@ -79,7 +52,6 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
         k2[0] = k1[0];
         k2[1] = k1[1] / 2;
         k2[2] = k1[2] / 4;
-        dest2 += deststep;
     } else {
         k0[0] = 2.0 / 3.0;
         k0[1] = 1.0 / 3.0;
@@ -89,9 +61,6 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
         k2[0] = (1 + 4 * k0[0] + 4 * k1[0]) / 9;
         k2[1] = (k0[1] + 2 * k1[1]) / 9;
         k2[2] = k1[2] / 9;
-        dest2 += deststep;
-        deststep += deststep;
-        dest3 += deststep;
     }
 
     for (j = 0; j < Yres; j++)
@@ -199,7 +168,7 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
                 w[24] = w[22];
             }
 
-            for (d = 0; d < 4; d++)
+            for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
             {
                 imx = (double)w[0].c[d];
                   b11 = -(k2[2] * imx);
@@ -308,7 +277,7 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
                 imx = (double)w[24].c[d];
                   b33 -= (k2[2] * imx);
 
-                if (scale_mode == 2)
+                if (scale_mode == SCALE_HRIS_2X)
                 {
                     r11 = (k1[0] * b22 + k1[1] * (b12 + b21) + k1[2] * b11);
                     r12 = (k1[0] * b22 + k1[1] * (b12 + b23) + k1[2] * b13);
@@ -341,75 +310,34 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
                     wr[8].c[d] = ByteClamp((int)(r33 + 0.5));
                 }
             }
-            if (scale_mode == 2)
+            if (scale_mode == SCALE_HRIS_2X)
             {
-                for (k =  0; k < 2; k++)
+                for (k =  0; k < scale_mode; k++)
                 {
                     // wt = PixeltoARGB(wr[k]);
-                    *dest = wr[k].c[3];
-                    dest++;
-                    *dest = wr[k].c[2];
-                    dest++;
-                    *dest = wr[k].c[1];
-                    dest++;
-                    *dest = wr[k].c[0];
-                    dest++;
-                }
-                for (k =  2; k < 4; k++)
-                {
-                    // wt = PixeltoARGB(wr[k]);
-                    *dest2 = wr[k].c[3];
-                    dest2++;
-                    *dest2 = wr[k].c[2];
-                    dest2++;
-                    *dest2 = wr[k].c[1];
-                    dest2++;
-                    *dest2 = wr[k].c[0];
-                    dest2++;
+                    for (l = 0; l < BYTE_SIZE_RGBA_4BPP; l++)
+                    {
+                        *dest = wr[k].c[BYTE_SIZE_RGBA_4BPP - l - 1];
+                        *(dest + deststep) = wr[k+scale_mode].c[BYTE_SIZE_RGBA_4BPP - l - 1];
+                        dest++;
+                    }
                 }
             } else {
-                for (k =  0; k < 3; k++)
+                for (k =  0; k < scale_mode; k++)
                 {
                     // wt = PixeltoARGB(wr[k]);
-                    *dest = wr[k].c[3];
-                    dest++;
-                    *dest = wr[k].c[2];
-                    dest++;
-                    *dest = wr[k].c[1];
-                    dest++;
-                    *dest = wr[k].c[0];
-                    dest++;
-                }
-                for (k =  3; k < 6; k++)
-                {
-                    // wt = PixeltoARGB(wr[k]);
-                    *dest2 = wr[k].c[3];
-                    dest2++;
-                    *dest2 = wr[k].c[2];
-                    dest2++;
-                    *dest2 = wr[k].c[1];
-                    dest2++;
-                    *dest2 = wr[k].c[0];
-                    dest2++;
-                }
-                for (k =  6; k < 9; k++)
-                {
-                    // wt = PixeltoARGB(wr[k]);
-                    *dest3 = wr[k].c[3];
-                    dest3++;
-                    *dest3 = wr[k].c[2];
-                    dest3++;
-                    *dest3 = wr[k].c[1];
-                    dest3++;
-                    *dest3 = wr[k].c[0];
-                    dest3++;
+                    for (l = 0; l < BYTE_SIZE_RGBA_4BPP; l++)
+                    {
+                        *dest = wr[k].c[BYTE_SIZE_RGBA_4BPP - l - 1];
+                        *(dest + deststep) = wr[k+scale_mode].c[BYTE_SIZE_RGBA_4BPP - l - 1];
+                        *(dest + deststep + deststep) = wr[k+scale_mode+scale_mode].c[BYTE_SIZE_RGBA_4BPP - l - 1];
+                        dest++;
+                    }
                 }
             }
             sp++;
         }
-        dest += deststep;
-        dest2 += deststep;
-        dest3 += deststep;
+        dest += deststep * (scale_mode - 1);
     }
 }
 

@@ -24,6 +24,7 @@ libexecdir = $(gimpplugindir)/plug-ins
 libexec_PROGRAMS = plugin_pixel_art_scalers
 
 plugin_pixel_art_scalers_SOURCES = \
+	common_ris.c \
 	filter_pixel_art_scalers.c \
 	filter_dialog.c \
 	filter_scalers.c \

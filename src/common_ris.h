@@ -29,18 +29,24 @@
  * the author or the person who identified the work.
  */
 
-#ifndef __HRIS_H_
-#define __HRIS_H_
+#ifndef __COMMON_RIS_H_
+#define __COMMON_RIS_H_
 
-#include <stdlib.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 
-#define SCALE_HRIS_2X  2
-#define SCALE_HRIS_3X  3
+#define maskA  0xFF000000
+#define maskB  0x00FF0000
+#define maskG  0x0000FF00
+#define maskR  0x000000FF
+#define BYTE_SIZE_RGBA_4BPP  4
 
-void scaler_hris_2x(uint32_t *src,  uint32_t *dest, int width, int height);
-void scaler_hris_3x(uint32_t *src,  uint32_t *dest, int width, int height);
+typedef struct mpixel
+{
+    uint8_t c[4];
+} ARGBpixel;
 
-#endif //__HRIS_H_//
+uint8_t ByteClamp(int c);
+ARGBpixel ARGBtoPixel(uint32_t targb);
+uint32_t PixeltoARGB(ARGBpixel tp);
+
+#endif //__COMMON_RIS_H_//
