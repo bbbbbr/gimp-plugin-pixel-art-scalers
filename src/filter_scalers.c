@@ -18,6 +18,7 @@
 #include "hris.h"
 #include "xbr_filters.h"
 #include "scaler_scalex.h"
+#include "gsample.h"
 #include "scaler_nearestneighbor.h"
 
 static scaler_info scalers[SCALER_ENUM_LAST];
@@ -314,6 +315,20 @@ void scalers_init(void) {
     scalers[SCALER_4X_SCALEX].scaler_function = &scaler_scalex_4x;
     scalers[SCALER_4X_SCALEX].scale_factor    = 4;
     snprintf(scalers[SCALER_4X_SCALEX].scaler_name, SCALER_STR_MAX, "4x ScaleX");
+
+
+    // GSAMPLE
+    scalers[SCALER_2X_GSAMPLE].scaler_function = &gsample_2x;
+    scalers[SCALER_2X_GSAMPLE].scale_factor    = 2;
+    snprintf(scalers[SCALER_2X_GSAMPLE].scaler_name, SCALER_STR_MAX, "2x Gsample");
+
+    scalers[SCALER_3X_GSAMPLE].scaler_function = &gsample_3x;
+    scalers[SCALER_3X_GSAMPLE].scale_factor    = 3;
+    snprintf(scalers[SCALER_3X_GSAMPLE].scaler_name, SCALER_STR_MAX, "3x Gsample");
+
+    scalers[SCALER_4X_GSAMPLE].scaler_function = &gsample_4x;
+    scalers[SCALER_4X_GSAMPLE].scale_factor    = 4;
+    snprintf(scalers[SCALER_4X_GSAMPLE].scaler_name, SCALER_STR_MAX, "4x Gsample");
 
 
     // NEAREST

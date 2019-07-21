@@ -31,17 +31,20 @@
         SCALER_2X_HRIS,
         SCALER_2X_XBR,
         SCALER_2X_SCALEX,
+        SCALER_2X_GSAMPLE,
         SCALER_2X_NEAREST,
 
         SCALER_3X_HQX,
         SCALER_3X_HRIS,
         SCALER_3X_XBR,
         SCALER_3X_SCALEX,
+        SCALER_3X_GSAMPLE,
         SCALER_3X_NEAREST,
 
         SCALER_4X_HQX,
         SCALER_4X_XBR,
         SCALER_4X_SCALEX,
+        SCALER_4X_GSAMPLE,
         SCALER_4X_NEAREST,
 
         SCALER_ENUM_LAST
