@@ -31,6 +31,7 @@ plugin_pixel_art_scalers_SOURCES = \
 	hqx_init.c \
 	hq2x.c \
 	hq4x.c \
+	hris.c \
 	xbr.c \
 	scaler_scalex.c \
 	scaler_nearestneighbor.c

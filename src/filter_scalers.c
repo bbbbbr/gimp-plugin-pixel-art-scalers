@@ -15,6 +15,7 @@
 
 // Filter includes
 #include "hqx.h"
+#include "hris.h"
 #include "xbr_filters.h"
 #include "scaler_scalex.h"
 #include "scaler_nearestneighbor.h"
@@ -275,6 +276,16 @@ void scalers_init(void) {
     scalers[SCALER_4X_HQX].scaler_function = &hq4x_32;
     scalers[SCALER_4X_HQX].scale_factor    = 4;
     snprintf(scalers[SCALER_4X_HQX].scaler_name, SCALER_STR_MAX, "4x HQx");
+
+
+    // HRIS
+    scalers[SCALER_2X_HRIS].scaler_function = &scaler_hris_2x;
+    scalers[SCALER_2X_HRIS].scale_factor    = 2;
+    snprintf(scalers[SCALER_2X_HRIS].scaler_name, SCALER_STR_MAX, "2x HRIS");
+
+    scalers[SCALER_3X_HRIS].scaler_function = &scaler_hris_3x;
+    scalers[SCALER_3X_HRIS].scale_factor    = 3;
+    snprintf(scalers[SCALER_3X_HRIS].scaler_name, SCALER_STR_MAX, "3x HRIS");
 
 
     // XBR
