@@ -43,59 +43,59 @@ static GtkWidget * preview_scaled;
 /*******************************************************/
 gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 {
-  GtkWidget * dialog;
-  GtkWidget * main_vbox;
-  GtkWidget * preview_hbox;
-  GtkWidget * preview;
-  GtkWidget * scaled_preview_window;
+    GtkWidget * dialog;
+    GtkWidget * main_vbox;
+    GtkWidget * preview_hbox;
+    GtkWidget * preview;
+    GtkWidget * scaled_preview_window;
 
-  GtkWidget * settings_table;
-  GtkWidget * settings_scaler_combo;
-  GtkWidget * settings_scaler_label;
+    GtkWidget * settings_table;
+    GtkWidget * settings_scaler_combo;
+    GtkWidget * settings_scaler_label;
 
-  gboolean   run;
-  gint       idx;
-
-
-  gimp_ui_init (PLUG_IN_BINARY, FALSE);
-
-  dialog = gimp_dialog_new ("Pixel Art Scalers", PLUG_IN_ROLE,
-                            NULL, 0,
-                            gimp_standard_help_func, PLUG_IN_PROCEDURE,
-
-                            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-                            GTK_STOCK_OK,     GTK_RESPONSE_OK,
-
-                            NULL);
-
-  // Resize to show more of scaled preview by default (this sets MIN size)
-  gtk_widget_set_size_request (dialog,
-                               500,
-                               400);
+    gboolean   run;
+    gint       idx;
 
 
-  gtk_dialog_set_alternative_button_order (GTK_DIALOG (dialog),
-                                           GTK_RESPONSE_OK,
-                                           GTK_RESPONSE_CANCEL,
-                                           -1);
+    gimp_ui_init (PLUG_IN_BINARY, FALSE);
 
-  gimp_window_set_transient (GTK_WINDOW (dialog));
+    dialog = gimp_dialog_new ("Pixel Art Scalers", PLUG_IN_ROLE,
+                              NULL, 0,
+                              gimp_standard_help_func, PLUG_IN_PROCEDURE,
+
+                              GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                              GTK_STOCK_OK,     GTK_RESPONSE_OK,
+
+                              NULL);
+
+    // Resize to show more of scaled preview by default (this sets MIN size)
+    gtk_widget_set_size_request (dialog,
+                                 500,
+                                 400);
 
 
-  // Create a main vertical box for the preview
-  main_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
-  gtk_container_set_border_width (GTK_CONTAINER (main_vbox), 6);
-  gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (dialog))),
-                      main_vbox, TRUE, TRUE, 0);
-  gtk_widget_show (main_vbox);
+    gtk_dialog_set_alternative_button_order (GTK_DIALOG (dialog),
+            GTK_RESPONSE_OK,
+            GTK_RESPONSE_CANCEL,
+            -1);
+
+    gimp_window_set_transient (GTK_WINDOW (dialog));
 
 
-  // Create a side-by-side sub-box for the pair of preview windows
-  preview_hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
-  gtk_container_set_border_width (GTK_CONTAINER (preview_hbox), 6);
-  gtk_box_pack_start (GTK_BOX (main_vbox),
-                      preview_hbox, TRUE, TRUE, 0);
-  gtk_widget_show (preview_hbox);
+    // Create a main vertical box for the preview
+    main_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+    gtk_container_set_border_width (GTK_CONTAINER (main_vbox), 6);
+    gtk_box_pack_start (GTK_BOX (gtk_dialog_get_content_area (GTK_DIALOG (dialog))),
+                        main_vbox, TRUE, TRUE, 0);
+    gtk_widget_show (main_vbox);
+
+
+    // Create a side-by-side sub-box for the pair of preview windows
+    preview_hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+    gtk_container_set_border_width (GTK_CONTAINER (preview_hbox), 6);
+    gtk_box_pack_start (GTK_BOX (main_vbox),
+                        preview_hbox, TRUE, TRUE, 0);
+    gtk_widget_show (preview_hbox);
 
 
     // Create source image preview and scaled preview areas
@@ -118,7 +118,7 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
     // Add the scaled preview to the scrolled window
     // and then display them both (with auto-resize)
     gtk_scrolled_window_add_with_viewport((GtkScrolledWindow *)scaled_preview_window,
-                                              preview_scaled);
+                                          preview_scaled);
     gtk_box_pack_start (GTK_BOX (preview_hbox), scaled_preview_window, TRUE, TRUE, 0);
     gtk_widget_show (scaled_preview_window);
     gtk_widget_show (preview_scaled);
@@ -177,15 +177,15 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
                               preview);
 
 
-  gtk_widget_show (dialog);
+    gtk_widget_show (dialog);
 
-  run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);
-
-
-  gtk_widget_destroy (dialog);
+    run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);
 
 
-  return run;
+    gtk_widget_destroy (dialog);
+
+
+    return run;
 }
 
 
@@ -204,11 +204,12 @@ gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event,
     scaled_output = scaled_info_get();
 
     if (widget == NULL)
-      return 1; // Exit, failed
+        return 1; // Exit, failed
 
     // Redraw the scaled preview if it's available
     if ( (scaled_output->p_scaledbuf != NULL) &&
-         (scaled_output->valid_image == TRUE) ) {
+            (scaled_output->valid_image == TRUE) )
+    {
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (widget),  // Calling widget should be preview_scaled
                                 0, 0,
                                 scaled_output->width,
@@ -237,10 +238,11 @@ static void on_settings_scaler_combo_changed(GtkComboBox *combo, gpointer callba
 
     selected_string = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(combo) );
 
-    for (idx=0; idx < SCALER_ENUM_LAST; idx++) {
+    for (idx=0; idx < SCALER_ENUM_LAST; idx++)
+    {
         // If the mode string matched the one in the combo, select it as the current mode
         if (!(g_strcmp0(selected_string, scaler_name_get(idx))))
-          scaler_mode_set(idx);
+            scaler_mode_set(idx);
     }
 }
 
@@ -263,7 +265,7 @@ static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint 
 
     // Only resize if the width, height or scaling changed
     if ( (width_current  != (width_new  * scale_factor_new)) ||
-         (height_current != (height_new * scale_factor_new)) )
+            (height_current != (height_new * scale_factor_new)) )
     {
         // Resize scaled preview area
         gtk_widget_set_size_request (preview_scaled, width_new * scale_factor_new, height_new * scale_factor_new);
@@ -313,14 +315,16 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 
 
     // Get the working image area for either the preview sub-window or the entire image
-    if (preview) {
+    if (preview)
+    {
         gimp_preview_get_position (preview, &x, &y);
         gimp_preview_get_size (preview, &width, &height);
 
         dialog_scaled_preview_check_resize( preview_scaled, width, height, scale_factor);
     }
     else if (! gimp_drawable_mask_intersect (drawable->drawable_id,
-                                             &x, &y, &width, &height)) {
+             &x, &y, &width, &height))
+    {
         return;
     }
 
@@ -332,7 +336,8 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     scaled_output_check_reallocate(scale_factor, width, height);
 
 
-    if (scaled_output_check_reapply_scalers(scaler_mode_get(), x, y)) {
+    if (scaled_output_check_reapply_scalers(scaler_mode_get(), x, y))
+    {
 
         // ====== GET THE SOURCE IMAGE ======
 
@@ -370,7 +375,8 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
                      (int) width, (int) height);
     }
     // Filter is done, apply the update
-    if (preview) {
+    if (preview)
+    {
 
         // Draw scaled image onto preview area
         // Expects 4BPP RGBA
@@ -385,7 +391,8 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     else
     {
         // Remove the alpha byte from the scaled output if the source image was 3BPP RGB
-        if ((bpp == BYTE_SIZE_RGB_3BPP) & (scaled_output->bpp != BYTE_SIZE_RGB_3BPP)) { // i.e. !has_alpha
+        if ((bpp == BYTE_SIZE_RGB_3BPP) & (scaled_output->bpp != BYTE_SIZE_RGB_3BPP))   // i.e. !has_alpha
+        {
             buffer_remove_alpha_byte((guchar *) scaled_output->p_scaledbuf, scaled_output->size_bytes);
             scaled_output->bpp = BYTE_SIZE_RGB_3BPP;
         }
@@ -398,7 +405,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 
     // Free the working buffer
     if (p_srcbuf)
-      g_free (p_srcbuf);
+        g_free (p_srcbuf);
 }
 
 
@@ -423,7 +430,7 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbu
     GimpDrawable  * resized_drawable;
 
     if (! gimp_drawable_mask_intersect (drawable->drawable_id,
-                                         &x, &y, &width, &height))
+                                        &x, &y, &width, &height))
         return;
 
     // == START UNDO GROUPING
@@ -438,12 +445,12 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbu
 
         // Resize the current layer to match the resized image
         gimp_layer_resize_to_image_size( gimp_image_get_active_layer(
-                                           gimp_item_get_image(drawable->drawable_id) ) );
+                                             gimp_item_get_image(drawable->drawable_id) ) );
 
 
         // Get a new drawable handle from the resized layer/image
         resized_drawable = gimp_drawable_get( gimp_image_get_active_drawable(
-                                                gimp_item_get_image(drawable->drawable_id) ) );
+                gimp_item_get_image(drawable->drawable_id) ) );
 
         // Initialize destination pixel region with drawable
         // TRUE,  TRUE  : region will be used to write to the shadow tiles

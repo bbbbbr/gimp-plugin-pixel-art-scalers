@@ -7,8 +7,11 @@ These scalers are able to resize graphics in a way that avoids both bluring and 
 
 Supported image scalers:
  * HQX (hq2x, hq3x, hq4x)
+ * HRIS (hris2x, hris3x)
  * XBR (xbr2x, xbr3x, xbr4x)
  * ScaleX (scale2x, scale3x, scale4x)
+ * Gsample (gsample2x, gsample3x, gsample4x)
+ * Nearest Neighbor (nearest2x, nearest3x, nearest4x)
 
 ![GIMP Image Editor using Pixel Art Scalers Plugin](https://raw.githubusercontent.com/bbbbbr/gimp-plugin-pixel-art-scalers/master/info/gimp-plugin-pixel-art-scalers.png)
 

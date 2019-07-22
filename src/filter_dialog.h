@@ -5,10 +5,10 @@
 #ifndef __FILTER_DIALOG_H_
 #define __FILTER_DIALOG_H_
 
-    #include <stdint.h>
+#include <stdint.h>
 
 
-    gboolean pixel_art_scalers_dialog (GimpDrawable *drawable);
-    void     pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview);
+gboolean pixel_art_scalers_dialog (GimpDrawable *drawable);
+void     pixel_art_scalers_run (GimpDrawable *drawable, GimpPreview  *preview);
 
 #endif

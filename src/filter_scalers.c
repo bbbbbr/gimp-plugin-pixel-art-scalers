@@ -33,7 +33,8 @@ static gint scaler_mode;
 //
 // scaler_index: desired scaler (from the enum scaler_list)
 //
-const char * scaler_name_get(gint scaler_index) {
+const char * scaler_name_get(gint scaler_index)
+{
 
     return (scalers[scaler_index].scaler_name);
 }
@@ -45,7 +46,8 @@ const char * scaler_name_get(gint scaler_index) {
 //
 // scaler_index: desired scaler (from the enum scaler_list)
 //
-gint scaler_scale_factor_get(gint scaler_index) {
+gint scaler_scale_factor_get(gint scaler_index)
+{
 
     return (scalers[scaler_mode].scale_factor);
 }
@@ -57,10 +59,11 @@ gint scaler_scale_factor_get(gint scaler_index) {
 // Preserves current mode across different callers
 // (filter_dialog.c,  filter_pixel_art_scalers.c)
 //
-void scaler_mode_set(gint scaler_mode_new) {
+void scaler_mode_set(gint scaler_mode_new)
+{
     // Don't update the mode if it's outside the allowed range
     if ((scaler_mode_new >= SCALER_ENUM_FIRST) &&
-        (scaler_mode_new < SCALER_ENUM_LAST))
+            (scaler_mode_new < SCALER_ENUM_LAST))
         scaler_mode = scaler_mode_new;
 }
 
@@ -68,7 +71,8 @@ void scaler_mode_set(gint scaler_mode_new) {
 //
 // Returns the current scaler mode
 //
-gint scaler_mode_get(void) {
+gint scaler_mode_get(void)
+{
     return (scaler_mode);
 }
 
@@ -81,7 +85,8 @@ gint scaler_mode_get(void) {
 //
 // Used to assist with output caching
 //
-scaled_output_info * scaled_info_get(void) {
+scaled_output_info * scaled_info_get(void)
+{
     return &scaled_output;
 }
 
@@ -94,19 +99,20 @@ scaled_output_info * scaled_info_get(void) {
 //
 // Used to assist with output caching
 //
-gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint y_new) {
+gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint y_new)
+{
 
-  gint result;
+    gint result;
 
-  result = ((scaled_output.scaler_mode != scaler_mode_new) ||
-            (scaled_output.x != x_new) ||
-            (scaled_output.y != y_new) ||
-            (scaled_output.valid_image == FALSE));
+    result = ((scaled_output.scaler_mode != scaler_mode_new) ||
+              (scaled_output.x != x_new) ||
+              (scaled_output.y != y_new) ||
+              (scaled_output.valid_image == FALSE));
 
-  scaled_output.x = x_new;
-  scaled_output.y = y_new;
+    scaled_output.x = x_new;
+    scaled_output.y = y_new;
 
-  return (result);
+    return (result);
 }
 
 
@@ -117,9 +123,10 @@ gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint 
 void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint height_new)
 {
     if ((scale_factor_new != scaled_output.scale_factor) ||
-        ((width_new  * scale_factor_new) != scaled_output.width) ||
-        ((height_new * scale_factor_new) != scaled_output.height) ||
-        (scaled_output.p_scaledbuf == NULL)) {
+            ((width_new  * scale_factor_new) != scaled_output.width) ||
+            ((height_new * scale_factor_new) != scaled_output.height) ||
+            (scaled_output.p_scaledbuf == NULL))
+    {
 
         // Update the buffer size and re-allocate. The x uint32_t is for RGBA buffer size
         scaled_output.width        = width_new  * scale_factor_new;
@@ -145,16 +152,16 @@ void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint 
 //
 void scaled_output_init(void)
 {
-      scaled_output.p_scaledbuf  = NULL;
-      scaled_output.width        = 0;
-      scaled_output.height       = 0;
-      scaled_output.x            = 0;
-      scaled_output.y            = 0;
-      scaled_output.scale_factor = 0;
-      scaled_output.scaler_mode  = 0;
-      scaled_output.size_bytes   = 0;
-      scaled_output.bpp          = 0;
-      scaled_output.valid_image  = FALSE;
+    scaled_output.p_scaledbuf  = NULL;
+    scaled_output.width        = 0;
+    scaled_output.height       = 0;
+    scaled_output.x            = 0;
+    scaled_output.y            = 0;
+    scaled_output.scale_factor = 0;
+    scaled_output.scaler_mode  = 0;
+    scaled_output.size_bytes   = 0;
+    scaled_output.bpp          = 0;
+    scaled_output.valid_image  = FALSE;
 }
 
 
@@ -164,18 +171,20 @@ void scaled_output_init(void)
 // Calls selected scaler function
 // Updates valid_image to assist with caching
 //
-void scaler_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_destbuf, int width, int height) {
+void scaler_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_destbuf, int width, int height)
+{
 
     if ((p_srcbuf == NULL) || (p_destbuf == NULL))
         return;
 
-    if (scaler_mode < SCALER_ENUM_LAST) {
+    if (scaler_mode < SCALER_ENUM_LAST)
+    {
 
         // Call the requested scaler function
         scalers[scaler_mode].scaler_function( (uint32_t*) p_srcbuf,
                                               (uint32_t*) p_destbuf,
-                                                    (int) width,
-                                                    (int) height);
+                                              (int) width,
+                                              (int) height);
         scaled_output.bpp = BYTE_SIZE_RGBA_4BPP;
         scaled_output.scaler_mode = scaler_mode;
         scaled_output.valid_image = TRUE;
@@ -189,7 +198,8 @@ void scaler_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_destbuf, in
 // Utility function to convert 3BPP RGB to 4BPP RGBA
 // by inserting a fourth (alpha channel) byte after every 3 bytes
 //
-void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
+void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size)
+{
 
     // Iterates through the buffer backward, from END to START
     // and remaps from RGB to RGBA (adds alpha byte)
@@ -199,7 +209,8 @@ void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
     guchar * p_4bpp = p_srcbuf + srcbuf_size -  4;          // Last pixel of 4BPP Buffer
     glong idx = 0;
 
-    while(idx < srcbuf_size) {
+    while(idx < srcbuf_size)
+    {
         p_4bpp[3] = ALPHA_MASK_OPAQUE;  // Set alpha mask byte to 100% opaque / visible
         p_4bpp[2] = p_3bpp[2]; // copy B
         p_4bpp[1] = p_3bpp[1]; // copy G
@@ -217,7 +228,8 @@ void buffer_add_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 // Utility function to convert 4BPP RGBA to 3BPP RGB
 // by removing the fourth (alpha channel) byte after every 3 bytes
 //
-void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
+void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size)
+{
 
     // Iterates through the buffer forward, from START to END
     // and remaps from RGBA to RGB (removes alpha byte)
@@ -227,10 +239,11 @@ void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
     guchar * p_4bpp = p_srcbuf; // Last First of 4BPP Buffer
     glong idx = 0;
 
-    while(idx < srcbuf_size) {
-          p_3bpp[0] = p_4bpp[0]; // copy R
-          p_3bpp[1] = p_4bpp[1]; // copy G
-          p_3bpp[2] = p_4bpp[2]; // copy B
+    while(idx < srcbuf_size)
+    {
+        p_3bpp[0] = p_4bpp[0]; // copy R
+        p_3bpp[1] = p_4bpp[1]; // copy G
+        p_3bpp[2] = p_4bpp[2]; // copy B
 
         p_3bpp += 3;  // Advance 3BPP image pointer to next pixel
         p_4bpp += 4;  // Advance 4BPP image pointer to next pixel
@@ -246,10 +259,11 @@ void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 // Should be called only at the very
 // end of the plugin shutdown (not on dialog close)
 //
-void pixel_art_scalers_release_resources(void) {
+void pixel_art_scalers_release_resources(void)
+{
 
-  if (scaled_output.p_scaledbuf)
-      g_free(scaled_output.p_scaledbuf);
+    if (scaled_output.p_scaledbuf)
+        g_free(scaled_output.p_scaledbuf);
 }
 
 
@@ -258,7 +272,8 @@ void pixel_art_scalers_release_resources(void) {
 // Populate the shared list of available scalers with their names
 // calling functions and scale factors.
 //
-void scalers_init(void) {
+void scalers_init(void)
+{
 
     // Init HQX scaler library
     hqxInit();
@@ -346,4 +361,4 @@ void scalers_init(void) {
 
     // Now set the default scaler
     scaler_mode = SCALER_2X_HQX;
- }
+}

@@ -42,21 +42,25 @@ void scaler_nearest_nx(uint32_t * sp,  uint32_t * dp, int Xres, int Yres, int sc
     dst = (uint32_t *) dp;
 
 
-    for (y=0; y < Yres; y++) {
+    for (y=0; y < Yres; y++)
+    {
         // Copy each line from the source image
-        for (x=0; x < Xres; x++) {
+        for (x=0; x < Xres; x++)
+        {
 
             // Copy new pixels from left source pixel
-            for (sx=0; sx < scale_factor; sx++) {
+            for (sx=0; sx < scale_factor; sx++)
+            {
                 // Copy each uint32 (RGBA 4BPP) pixel to the dest buffer
-                    *dp++ = *sp;
-                }
+                *dp++ = *sp;
+            }
             // Move to next source pixel
             sp++;
         }
 
         // Duplicate the preceding line (at scaled size) N times if needed
-        for (sx=0; sx < (scale_factor -1); sx++) {
+        for (sx=0; sx < (scale_factor -1); sx++)
+        {
             // memcopy operates on 8 bits, the data size is 32 bits
             memcpy(dp, dp - line_width_scaled, line_width_scaled * sizeof(uint32_t));
             dp+= line_width_scaled;

@@ -38,8 +38,10 @@ void gsample(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_factor)
 
     for (j = 0; j < Yres; j++)
     {
-        if (j > 0)      prevline = -Xres; else prevline = 0;
-        if (j < Yres-1) nextline =  Xres; else nextline = 0;
+        if (j > 0)      prevline = -Xres;
+        else prevline = 0;
+        if (j < Yres-1) nextline =  Xres;
+        else nextline = 0;
 
         for (i = 0; i < Xres; i++)
         {

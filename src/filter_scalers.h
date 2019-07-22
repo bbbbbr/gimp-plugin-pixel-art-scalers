@@ -6,88 +6,91 @@
 #define __FILTER_SCALERS_H_
 
 
-    #include <stdio.h>
-    #include <string.h>
-    #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
 
-    #include <libgimp/gimp.h>
-    #include <libgimp/gimpui.h>
-
-
-    #define BYTE_SIZE_RGBA_4BPP 4
-    #define BYTE_SIZE_RGB_3BPP  3
-
-    #define ALPHA_MASK_OPAQUE   0xFF  // When adding alpha mask byte, set to 100% opaque / visible
-
-    #define SCALER_STR_MAX      30
+#include <libgimp/gimp.h>
+#include <libgimp/gimpui.h>
 
 
-    // List of available scalers
-    // Order here controls order in dialog drop-down selector
-    enum scaler_list {
-        SCALER_ENUM_FIRST = 0,
+#define BYTE_SIZE_RGBA_4BPP 4
+#define BYTE_SIZE_RGB_3BPP  3
 
-        SCALER_2X_HQX = SCALER_ENUM_FIRST,
-        SCALER_2X_HRIS,
-        SCALER_2X_XBR,
-        SCALER_2X_SCALEX,
-        SCALER_2X_GSAMPLE,
-        SCALER_2X_NEAREST,
+#define ALPHA_MASK_OPAQUE   0xFF  // When adding alpha mask byte, set to 100% opaque / visible
 
-        SCALER_3X_HQX,
-        SCALER_3X_HRIS,
-        SCALER_3X_XBR,
-        SCALER_3X_SCALEX,
-        SCALER_3X_GSAMPLE,
-        SCALER_3X_NEAREST,
-
-        SCALER_4X_HQX,
-        SCALER_4X_XBR,
-        SCALER_4X_SCALEX,
-        SCALER_4X_GSAMPLE,
-        SCALER_4X_NEAREST,
-
-        SCALER_ENUM_LAST
-    };
+#define SCALER_STR_MAX      30
 
 
+// List of available scalers
+// Order here controls order in dialog drop-down selector
+enum scaler_list
+{
+    SCALER_ENUM_FIRST = 0,
 
-    typedef struct {
-        void (*scaler_function)(uint32_t*, uint32_t*, int, int);
-        int  scale_factor;
-        char scaler_name[SCALER_STR_MAX];
-    } scaler_info;
+    SCALER_2X_HQX = SCALER_ENUM_FIRST,
+    SCALER_2X_HRIS,
+    SCALER_2X_XBR,
+    SCALER_2X_SCALEX,
+    SCALER_2X_GSAMPLE,
+    SCALER_2X_NEAREST,
+
+    SCALER_3X_HQX,
+    SCALER_3X_HRIS,
+    SCALER_3X_XBR,
+    SCALER_3X_SCALEX,
+    SCALER_3X_GSAMPLE,
+    SCALER_3X_NEAREST,
+
+    SCALER_4X_HQX,
+    SCALER_4X_XBR,
+    SCALER_4X_SCALEX,
+    SCALER_4X_GSAMPLE,
+    SCALER_4X_NEAREST,
+
+    SCALER_ENUM_LAST
+};
 
 
-    typedef struct {
-        gint       x,y;
-        gint       width, height;
-        gint       scale_factor;
-        gint       scaler_mode;
-        gint       bpp;
-        glong      size_bytes; // scaledbuf_size;
-        gboolean   valid_image;
 
-        uint32_t * p_scaledbuf;
-    } scaled_output_info;
+typedef struct
+{
+    void (*scaler_function)(uint32_t*, uint32_t*, int, int);
+    int  scale_factor;
+    char scaler_name[SCALER_STR_MAX];
+} scaler_info;
 
-    const char * scaler_name_get(gint);
-    gint scaler_scale_factor_get(gint);
 
-    void scaler_mode_set(gint);
-    gint scaler_mode_get(void);
+typedef struct
+{
+    gint       x,y;
+    gint       width, height;
+    gint       scale_factor;
+    gint       scaler_mode;
+    gint       bpp;
+    glong      size_bytes; // scaledbuf_size;
+    gboolean   valid_image;
 
-    scaled_output_info * scaled_info_get(void);
+    uint32_t * p_scaledbuf;
+} scaled_output_info;
 
-    void scalers_init(void);
-    void pixel_art_scalers_release_resources(void);
-    void scaler_apply(int, uint32_t *, uint32_t *, int, int);
+const char * scaler_name_get(gint);
+gint scaler_scale_factor_get(gint);
 
-    gint scaled_output_check_reapply_scalers(gint, gint, gint);
-    void scaled_output_check_reallocate(gint, gint, gint);
+void scaler_mode_set(gint);
+gint scaler_mode_get(void);
 
-    void scaled_output_init(void);
-    void buffer_add_alpha_byte(guchar *, glong);
-    void buffer_remove_alpha_byte(guchar *, glong);
+scaled_output_info * scaled_info_get(void);
+
+void scalers_init(void);
+void pixel_art_scalers_release_resources(void);
+void scaler_apply(int, uint32_t *, uint32_t *, int, int);
+
+gint scaled_output_check_reapply_scalers(gint, gint, gint);
+void scaled_output_check_reallocate(gint, gint, gint);
+
+void scaled_output_init(void);
+void buffer_add_alpha_byte(guchar *, glong);
+void buffer_remove_alpha_byte(guchar *, glong);
 
 #endif

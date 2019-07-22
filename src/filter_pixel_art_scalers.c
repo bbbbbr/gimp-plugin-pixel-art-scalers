@@ -33,7 +33,8 @@ static void run(const gchar *, gint, const GimpParam *, gint *, GimpParam **);
 
 
 // Declare plugin entry points
-GimpPlugInInfo PLUG_IN_INFO = {
+GimpPlugInInfo PLUG_IN_INFO =
+{
     NULL,
     NULL,
     query,
@@ -42,14 +43,14 @@ GimpPlugInInfo PLUG_IN_INFO = {
 
 typedef struct
 {
-  gint  scaler_mode;
+    gint  scaler_mode;
 } PluginPixelArtScalerVals;
 
 
 // Default settings for semi-persistant plugin config
 static PluginPixelArtScalerVals plugin_config_vals =
 {
-  0  // scaler_mode, default is HQ2X
+    0  // scaler_mode, default is HQ2X
 };
 
 
@@ -92,10 +93,10 @@ static void query(void)
 
 // The run function
 static void run(const gchar      * name,
-                      gint         nparams,
+                gint         nparams,
                 const GimpParam  * param,
-                      gint       * nreturn_vals,
-                      GimpParam ** return_vals)
+                gint       * nreturn_vals,
+                GimpParam ** return_vals)
 {
     // Create the return value.
     static GimpParam   return_values[2];
@@ -121,68 +122,68 @@ static void run(const gchar      * name,
     scalers_init();
 
 
-  switch (run_mode)
+    switch (run_mode)
     {
     case GIMP_RUN_INTERACTIVE:
-      //  Try to retrieve plugin settings, then apply them
-      gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
-      scaler_mode_set(plugin_config_vals.scaler_mode);
+        //  Try to retrieve plugin settings, then apply them
+        gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
+        scaler_mode_set(plugin_config_vals.scaler_mode);
 
-      //  First acquire information with a dialog
-      if (! pixel_art_scalers_dialog (drawable))
-        return;
-      break;
+        //  First acquire information with a dialog
+        if (! pixel_art_scalers_dialog (drawable))
+            return;
+        break;
 
     case GIMP_RUN_NONINTERACTIVE:
-      // Read in non-interactive mode plug settings, then apply them
-      plugin_config_vals.scaler_mode = param[3].data.d_int32;
-      scaler_mode_set(plugin_config_vals.scaler_mode);
-      break;
+        // Read in non-interactive mode plug settings, then apply them
+        plugin_config_vals.scaler_mode = param[3].data.d_int32;
+        scaler_mode_set(plugin_config_vals.scaler_mode);
+        break;
 
     case GIMP_RUN_WITH_LAST_VALS:
-     //  Try to retrieve plugin settings, then apply them
-     gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
-     scaler_mode_set(plugin_config_vals.scaler_mode);
-      break;
+        //  Try to retrieve plugin settings, then apply them
+        gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
+        scaler_mode_set(plugin_config_vals.scaler_mode);
+        break;
 
     default:
-      break;
+        break;
     }
 
-  if (status == GIMP_PDB_SUCCESS)
-  {
-      /*  Make sure that the drawable is RGB color  */
-      if (gimp_drawable_is_rgb (drawable->drawable_id))
+    if (status == GIMP_PDB_SUCCESS)
+    {
+        /*  Make sure that the drawable is RGB color  */
+        if (gimp_drawable_is_rgb (drawable->drawable_id))
         {
-          gimp_progress_init ("Pixel-Art-Scalers");
+            gimp_progress_init ("Pixel-Art-Scalers");
 
 
-          // Apply image filter (user confirmed in preview dialog)
-          pixel_art_scalers_run(drawable, NULL);
+            // Apply image filter (user confirmed in preview dialog)
+            pixel_art_scalers_run(drawable, NULL);
 
-          if (run_mode != GIMP_RUN_NONINTERACTIVE)
-            gimp_displays_flush ();
+            if (run_mode != GIMP_RUN_NONINTERACTIVE)
+                gimp_displays_flush ();
 
-          // Retrieve and then save plugin config settings
-          if (run_mode == GIMP_RUN_INTERACTIVE)
-            plugin_config_vals.scaler_mode = scaler_mode_get();
+            // Retrieve and then save plugin config settings
+            if (run_mode == GIMP_RUN_INTERACTIVE)
+                plugin_config_vals.scaler_mode = scaler_mode_get();
             gimp_set_data (PLUG_IN_PROCEDURE, &plugin_config_vals, sizeof (PluginPixelArtScalerVals));
         }
-      else
+        else
         {
-          status        = GIMP_PDB_EXECUTION_ERROR;
-          *nreturn_vals = 2;
-          return_values[1].type          = GIMP_PDB_STRING;
-          return_values[1].data.d_string = "Cannot operate on greyscale or indexed color images.";
-          // TODO: INDEXED IMAGE SUPPORT
+            status        = GIMP_PDB_EXECUTION_ERROR;
+            *nreturn_vals = 2;
+            return_values[1].type          = GIMP_PDB_STRING;
+            return_values[1].data.d_string = "Cannot operate on greyscale or indexed color images.";
+            // TODO: INDEXED IMAGE SUPPORT
         }
-  }
+    }
 
-  pixel_art_scalers_release_resources();
+    pixel_art_scalers_release_resources();
 
-  return_values[0].data.d_status = status;
+    return_values[0].data.d_status = status;
 
-  gimp_drawable_detach (drawable);
+    gimp_drawable_detach (drawable);
 }
 
 

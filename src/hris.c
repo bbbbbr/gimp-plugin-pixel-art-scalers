@@ -52,7 +52,9 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
         k2[0] = k1[0];
         k2[1] = k1[1] / 2;
         k2[2] = k1[2] / 4;
-    } else {
+    }
+    else
+    {
         k0[0] = 2.0 / 3.0;
         k0[1] = 1.0 / 3.0;
         k1[0] = k0[0] * k0[0];
@@ -65,10 +67,14 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
 
     for (j = 0; j < Yres; j++)
     {
-        if (j > 1)      prevline2 = -Xres-Xres; else prevline2 = 0;
-        if (j > 0)      prevline = -Xres; else prevline = 0;
-        if (j < Yres-1) nextline =  Xres; else nextline = 0;
-        if (j < Yres-2) nextline2 = Xres+Xres; else nextline2 = 0;
+        if (j > 1)      prevline2 = -Xres-Xres;
+        else prevline2 = 0;
+        if (j > 0)      prevline = -Xres;
+        else prevline = 0;
+        if (j < Yres-1) nextline =  Xres;
+        else nextline = 0;
+        if (j < Yres-2) nextline2 = Xres+Xres;
+        else nextline2 = 0;
 
         for (i = 0; i < Xres; i++)
         {
@@ -171,111 +177,111 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
             for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
             {
                 imx = (double)w[0].c[d];
-                  b11 = -(k2[2] * imx);
+                b11 = -(k2[2] * imx);
                 imx = (double)w[1].c[d];
-                  b11 -= (k2[1] * imx);
-                  b12 = -(k2[2] * imx);
+                b11 -= (k2[1] * imx);
+                b12 = -(k2[2] * imx);
                 imx = (double)w[2].c[d];
-                  b11 -= (k2[2] * imx);
-                  b12 -= (k2[1] * imx);
-                  b13 = -(k2[2] * imx);
+                b11 -= (k2[2] * imx);
+                b12 -= (k2[1] * imx);
+                b13 = -(k2[2] * imx);
                 imx = (double)w[3].c[d];
-                  b12 -= (k2[2] * imx);
-                  b13 -= (k2[1] * imx);
+                b12 -= (k2[2] * imx);
+                b13 -= (k2[1] * imx);
                 imx = (double)w[4].c[d];
-                  b13 -= (k2[2] * imx);
+                b13 -= (k2[2] * imx);
                 imx = (double)w[5].c[d];
-                  b11 -= (k2[1] * imx);
-                  b21 = -(k2[2] * imx);
+                b11 -= (k2[1] * imx);
+                b21 = -(k2[2] * imx);
                 imx = (double)w[6].c[d];
-                  b11 += ((2.0 - k2[0]) * imx);
-                  b12 -= (k2[1] * imx);
-                  b21 -= (k2[1] * imx);
-                  b22 = -(k2[2] * imx);
+                b11 += ((2.0 - k2[0]) * imx);
+                b12 -= (k2[1] * imx);
+                b21 -= (k2[1] * imx);
+                b22 = -(k2[2] * imx);
                 imx = (double)w[7].c[d];
-                  b11 -= (k2[1] * imx);
-                  b12 += ((2.0 - k2[0]) * imx);
-                  b13 -= (k2[1] * imx);
-                  b21 -= (k2[2] * imx);
-                  b22 -= (k2[1] * imx);
-                  b23 = -(k2[2] * imx);
+                b11 -= (k2[1] * imx);
+                b12 += ((2.0 - k2[0]) * imx);
+                b13 -= (k2[1] * imx);
+                b21 -= (k2[2] * imx);
+                b22 -= (k2[1] * imx);
+                b23 = -(k2[2] * imx);
                 imx = (double)w[8].c[d];
-                  b12 -= (k2[1] * imx);
-                  b13 += ((2.0 - k2[0]) * imx);
-                  b22 -= (k2[2] * imx);
-                  b23 -= (k2[1] * imx);
+                b12 -= (k2[1] * imx);
+                b13 += ((2.0 - k2[0]) * imx);
+                b22 -= (k2[2] * imx);
+                b23 -= (k2[1] * imx);
                 imx = (double)w[9].c[d];
-                  b13 -= (k2[1] * imx);
-                  b23 -= (k2[2] * imx);
+                b13 -= (k2[1] * imx);
+                b23 -= (k2[2] * imx);
                 imx = (double)w[10].c[d];
-                  b11 -= (k2[2] * imx);
-                  b21 -= (k2[1] * imx);
-                  b31 = -(k2[2] * imx);
+                b11 -= (k2[2] * imx);
+                b21 -= (k2[1] * imx);
+                b31 = -(k2[2] * imx);
                 imx = (double)w[11].c[d];
-                  b11 -= (k2[1] * imx);
-                  b12 -= (k2[2] * imx);
-                  b21 += ((2.0 - k2[0]) * imx);
-                  b22 -= (k2[1] * imx);
-                  b31 -= (k2[1] * imx);
-                  b32 = -(k2[2] * imx);
+                b11 -= (k2[1] * imx);
+                b12 -= (k2[2] * imx);
+                b21 += ((2.0 - k2[0]) * imx);
+                b22 -= (k2[1] * imx);
+                b31 -= (k2[1] * imx);
+                b32 = -(k2[2] * imx);
                 imx = (double)w[12].c[d];
-                  b11 -= (k2[2] * imx);
-                  b12 -= (k2[1] * imx);
-                  b13 -= (k2[2] * imx);
-                  b21 -= (k2[1] * imx);
-                  b22 += ((2.0 - k2[0]) * imx);
-                  b23 -= (k2[1] * imx);
-                  b31 -= (k2[2] * imx);
-                  b32 -= (k2[1] * imx);
-                  b33 = -(k2[2] * imx);
+                b11 -= (k2[2] * imx);
+                b12 -= (k2[1] * imx);
+                b13 -= (k2[2] * imx);
+                b21 -= (k2[1] * imx);
+                b22 += ((2.0 - k2[0]) * imx);
+                b23 -= (k2[1] * imx);
+                b31 -= (k2[2] * imx);
+                b32 -= (k2[1] * imx);
+                b33 = -(k2[2] * imx);
                 imx = (double)w[13].c[d];
-                  b12 -= (k2[2] * imx);
-                  b13 -= (k2[1] * imx);
-                  b22 -= (k2[1] * imx);
-                  b23 += ((2.0 - k2[0]) * imx);
-                  b32 -= (k2[2] * imx);
-                  b33 -= (k2[1] * imx);
+                b12 -= (k2[2] * imx);
+                b13 -= (k2[1] * imx);
+                b22 -= (k2[1] * imx);
+                b23 += ((2.0 - k2[0]) * imx);
+                b32 -= (k2[2] * imx);
+                b33 -= (k2[1] * imx);
                 imx = (double)w[14].c[d];
-                  b13 -= (k2[2] * imx);
-                  b23 -= (k2[1] * imx);
-                  b33 -= (k2[2] * imx);
+                b13 -= (k2[2] * imx);
+                b23 -= (k2[1] * imx);
+                b33 -= (k2[2] * imx);
                 imx = (double)w[15].c[d];
-                  b21 -= (k2[2] * imx);
-                  b31 -= (k2[1] * imx);
+                b21 -= (k2[2] * imx);
+                b31 -= (k2[1] * imx);
                 imx = (double)w[16].c[d];
-                  b21 -= (k2[1] * imx);
-                  b22 -= (k2[2] * imx);
-                  b31 += ((2.0 - k2[0]) * imx);
-                  b32 -= (k2[1] * imx);
+                b21 -= (k2[1] * imx);
+                b22 -= (k2[2] * imx);
+                b31 += ((2.0 - k2[0]) * imx);
+                b32 -= (k2[1] * imx);
                 imx = (double)w[17].c[d];
-                  b21 -= (k2[2] * imx);
-                  b22 -= (k2[1] * imx);
-                  b23 -= (k2[2] * imx);
-                  b31 -= (k2[1] * imx);
-                  b32 += ((2.0 - k2[0]) * imx);
-                  b33 -= (k2[1] * imx);
+                b21 -= (k2[2] * imx);
+                b22 -= (k2[1] * imx);
+                b23 -= (k2[2] * imx);
+                b31 -= (k2[1] * imx);
+                b32 += ((2.0 - k2[0]) * imx);
+                b33 -= (k2[1] * imx);
                 imx = (double)w[18].c[d];
-                  b22 -= (k2[2] * imx);
-                  b23 -= (k2[1] * imx);
-                  b32 -= (k2[1] * imx);
-                  b33 += ((2.0 - k2[0]) * imx);
+                b22 -= (k2[2] * imx);
+                b23 -= (k2[1] * imx);
+                b32 -= (k2[1] * imx);
+                b33 += ((2.0 - k2[0]) * imx);
                 imx = (double)w[19].c[d];
-                  b23 -= (k2[2] * imx);
-                  b33 -= (k2[1] * imx);
+                b23 -= (k2[2] * imx);
+                b33 -= (k2[1] * imx);
                 imx = (double)w[20].c[d];
-                  b31 -= (k2[2] * imx);
+                b31 -= (k2[2] * imx);
                 imx = (double)w[21].c[d];
-                  b31 -= (k2[1] * imx);
-                  b32 -= (k2[2] * imx);
+                b31 -= (k2[1] * imx);
+                b32 -= (k2[2] * imx);
                 imx = (double)w[22].c[d];
-                  b31 -= (k2[2] * imx);
-                  b32 -= (k2[1] * imx);
-                  b33 -= (k2[2] * imx);
+                b31 -= (k2[2] * imx);
+                b32 -= (k2[1] * imx);
+                b33 -= (k2[2] * imx);
                 imx = (double)w[23].c[d];
-                  b32 -= (k2[2] * imx);
-                  b33 -= (k2[1] * imx);
+                b32 -= (k2[2] * imx);
+                b33 -= (k2[1] * imx);
                 imx = (double)w[24].c[d];
-                  b33 -= (k2[2] * imx);
+                b33 -= (k2[2] * imx);
 
                 if (scale_mode == SCALE_HRIS_2X)
                 {
@@ -288,7 +294,9 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
                     wr[1].c[d] = ByteClamp((int)(r12 + 0.5));
                     wr[2].c[d] = ByteClamp((int)(r21 + 0.5));
                     wr[3].c[d] = ByteClamp((int)(r22 + 0.5));
-                } else {
+                }
+                else
+                {
                     r11 = (k1[0] * b22 + k1[1] * (b12 + b21) + k1[2] * b11);
                     r12 = (k0[0] * b22 + k0[1] * b12);
                     r13 = (k1[0] * b22 + k1[1] * (b12 + b23) + k1[2] * b13);
