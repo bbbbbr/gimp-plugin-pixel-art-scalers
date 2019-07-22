@@ -22,12 +22,12 @@
 void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode)
 {
     int bpp = BYTE_SIZE_RGBA_4BPP;
-    int i, j, d, k, l, deststep;
+    int i, j, d, k, l, il, stepl,deststep;
     int prevline2, prevline, nextline, nextline2;
     uint32_t wt;
     ARGBpixel w[25];
     ARGBpixel wr[9];
-    uint8_t *dest = (uint8_t *) dp;
+    uint32_t *dest = (uint32_t *) dp;
 
     double imx;
     double b11, b12, b13, b21, b22, b23, b31, b32, b33;
@@ -40,7 +40,7 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
     if (scale_mode < 2) scale_mode = 2;
     if (scale_mode > 3) scale_mode = 3;
 
-    deststep = Xres * scale_mode * bpp;
+    deststep = Xres * scale_mode;
 
     if (scale_mode == SCALE_HRIS_2X)
     {
@@ -310,30 +310,18 @@ void scaler_hris(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_mode
                     wr[8].c[d] = ByteClamp((int)(r33 + 0.5));
                 }
             }
-            if (scale_mode == SCALE_HRIS_2X)
+            for (k =  0; k < scale_mode; k++)
             {
-                for (k =  0; k < scale_mode; k++)
+                il = 0;
+                stepl = 0;
+                for (l =  0; l < scale_mode; l++)
                 {
-                    // wt = PixeltoARGB(wr[k]);
-                    for (l = 0; l < BYTE_SIZE_RGBA_4BPP; l++)
-                    {
-                        *dest = wr[k].c[BYTE_SIZE_RGBA_4BPP - l - 1];
-                        *(dest + deststep) = wr[k+scale_mode].c[BYTE_SIZE_RGBA_4BPP - l - 1];
-                        dest++;
-                    }
+                    wt = PixeltoARGB(wr[k+il]);
+                    *(dest + stepl) = wt;
+                    il += scale_mode;
+                    stepl += deststep;
                 }
-            } else {
-                for (k =  0; k < scale_mode; k++)
-                {
-                    // wt = PixeltoARGB(wr[k]);
-                    for (l = 0; l < BYTE_SIZE_RGBA_4BPP; l++)
-                    {
-                        *dest = wr[k].c[BYTE_SIZE_RGBA_4BPP - l - 1];
-                        *(dest + deststep) = wr[k+scale_mode].c[BYTE_SIZE_RGBA_4BPP - l - 1];
-                        *(dest + deststep + deststep) = wr[k+scale_mode+scale_mode].c[BYTE_SIZE_RGBA_4BPP - l - 1];
-                        dest++;
-                    }
-                }
+                dest++;
             }
             sp++;
         }

@@ -40,7 +40,7 @@
 #define maskR  0x000000FF
 #define BYTE_SIZE_RGBA_4BPP  4
 
-typedef struct mpixel
+typedef struct
 {
     uint8_t c[4];
 } ARGBpixel;

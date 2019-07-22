@@ -22,18 +22,19 @@
 void gsample(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_factor)
 {
     int bpp = BYTE_SIZE_RGBA_4BPP;
-    int i, j, d, k, l, deststep;
+    int i, j, d, k, l, il, stepl, deststep;
     int prevline2, prevline, nextline, nextline2;
     uint32_t wt;
     ARGBpixel w[9];
-    uint8_t wr;
-    uint8_t *dest = (uint8_t *) dp;
+    ARGBpixel wr;
+    uint32_t *dest = (uint32_t *) dp;
 
-    double imx, dy, dx, di, dj;
+    double imx, dy, dx, di, dj, dd;
     double deltay[BYTE_SIZE_RGBA_4BPP];
     double deltax[BYTE_SIZE_RGBA_4BPP];
 
-    deststep = Xres * scale_factor * bpp;
+    deststep = Xres * scale_factor;
+    dd = 1.0 / 16.0 / (double)scale_factor;
 
     for (j = 0; j < Yres; j++)
     {
@@ -90,7 +91,7 @@ void gsample(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_factor)
                 dy -= (double)w[0].c[d];
                 dy -= (double)w[1].c[d];
                 dy -= (double)w[2].c[d];
-                deltay[d] = dy / 8.0 / (double)scale_factor;
+                deltay[d] = dy * dd;
                 dx = (double)w[5].c[d];
                 dx += (double)w[2].c[d];
                 dx += (double)w[5].c[d];
@@ -99,7 +100,7 @@ void gsample(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_factor)
                 dx -= (double)w[0].c[d];
                 dx -= (double)w[3].c[d];
                 dx -= (double)w[6].c[d];
-                deltax[d] = dx / 8.0 / (double)scale_factor;
+                deltax[d] = dx * dd;
             }
             for (k =  0; k < scale_factor; k++)
             {
@@ -107,22 +108,27 @@ void gsample(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_factor)
                 di += 1.0;
                 di *= 0.5;
                 di += k;
-                for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
+                il = 0;
+                stepl = 0;
+                for (l =  0; l < scale_factor; l++)
                 {
-                    for (l =  0; l < scale_factor; l++)
+                    dj = -scale_factor;
+                    dj += 1.0;
+                    dj *= 0.5;
+                    dj += l;
+                    for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
                     {
-                        dj = -scale_factor;
-                        dj += 1.0;
-                        dj *= 0.5;
-                        dj += l;
-                        imx = w[4].c[BYTE_SIZE_RGBA_4BPP - d - 1];
-                        imx += (deltay[BYTE_SIZE_RGBA_4BPP - d - 1] * dj);
-                        imx += (deltax[BYTE_SIZE_RGBA_4BPP - d - 1] * di);
-                        wr = ByteClamp((int)(imx + 0.5));
-                        *(dest + deststep * l) = wr;
+                        imx = w[4].c[d];
+                        imx += (deltay[d] * dj);
+                        imx += (deltax[d] * di);
+                        wr.c[d] = ByteClamp((int)(imx + 0.5));
                     }
-                    dest++;
+                    wt = PixeltoARGB(wr);
+                    *(dest + stepl) = wt;
+                    il += scale_factor;
+                    stepl += deststep;
                 }
+                dest++;
             }
             sp++;
         }
