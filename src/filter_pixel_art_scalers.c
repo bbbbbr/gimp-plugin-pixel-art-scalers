@@ -38,12 +38,14 @@ GimpPlugInInfo PLUG_IN_INFO =
 typedef struct
 {
     gint  scaler_mode;
+    gint  scaler_factor_index;
 } PluginPixelArtScalerVals;
 
 // Default settings for semi-persistant plugin config
 static PluginPixelArtScalerVals plugin_config_vals =
 {
-    0  // scaler_mode, default is HQ2X
+    0,  // scaler_mode, default is HQx
+    0   // scale factor, default 2X
 };
 
 MAIN()
@@ -53,10 +55,11 @@ static void query(void)
 {
     static const GimpParamDef args[] =
     {
-        { GIMP_PDB_INT32,    "run-mode",    "The run mode { RUN-INTERACTIVE (0), RUN-NONINTERACTIVE (1) }" },
-        { GIMP_PDB_IMAGE,    "image",       "Input image (unused)" },
-        { GIMP_PDB_DRAWABLE, "drawable",    "Input drawable" },
-        { GIMP_PDB_INT32,    "scalar-mode", "Scaler mode to use for up-scaling the image (0-N)" }
+        { GIMP_PDB_INT32,    "run-mode",      "The run mode { RUN-INTERACTIVE (0), RUN-NONINTERACTIVE (1) }" },
+        { GIMP_PDB_IMAGE,    "image",         "Input image (unused)" },
+        { GIMP_PDB_DRAWABLE, "drawable",      "Input drawable" },
+        { GIMP_PDB_INT32,    "scalar-mode",   "Scaler mode to use for up-scaling the image" },
+        { GIMP_PDB_INT32,    "scalar-factor", "Scaler factor to use for up-scaling the image (0-N)" }
     };
 
     gimp_install_procedure (PLUG_IN_PROCEDURE,
@@ -111,6 +114,7 @@ static void run(const gchar      * name,
         //  Try to retrieve plugin settings, then apply them
         gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
         scaler_mode_set(plugin_config_vals.scaler_mode);
+        scaler_factor_set(plugin_config_vals.scaler_factor_index);
 
         //  First acquire information with a dialog
         if (! pixel_art_scalers_dialog (drawable))
@@ -120,13 +124,16 @@ static void run(const gchar      * name,
     case GIMP_RUN_NONINTERACTIVE:
         // Read in non-interactive mode plug settings, then apply them
         plugin_config_vals.scaler_mode = param[3].data.d_int32;
+        plugin_config_vals.scaler_factor_index = param[4].data.d_int32;
         scaler_mode_set(plugin_config_vals.scaler_mode);
+        scaler_factor_set(plugin_config_vals.scaler_factor_index);
         break;
 
     case GIMP_RUN_WITH_LAST_VALS:
         //  Try to retrieve plugin settings, then apply them
         gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
         scaler_mode_set(plugin_config_vals.scaler_mode);
+        scaler_factor_set(plugin_config_vals.scaler_factor_index);
         break;
 
     default:
@@ -150,6 +157,7 @@ static void run(const gchar      * name,
             // Retrieve and then save plugin config settings
             if (run_mode == GIMP_RUN_INTERACTIVE)
                 plugin_config_vals.scaler_mode = scaler_mode_get();
+                plugin_config_vals.scaler_factor_index = scaler_factor_index_get();
             gimp_set_data (PLUG_IN_PROCEDURE, &plugin_config_vals, sizeof (PluginPixelArtScalerVals));
         }
         else
