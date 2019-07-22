@@ -9,7 +9,6 @@
 //
 // ========================
 
-
 #include <string.h>
 #include <stdint.h>
 
@@ -19,18 +18,13 @@
 #include "filter_dialog.h"
 #include "filter_scalers.h"
 
-
-
 const char PLUG_IN_PROCEDURE[] = "filter-pixel-art-scalers-proc";
 const char PLUG_IN_ROLE[]      = "gimp-pixel-art-scalers";
 const char PLUG_IN_BINARY[]    = "plugin-pixel-art-scalers";
 
-
 // Predeclare entrypoints
 static void query(void);
 static void run(const gchar *, gint, const GimpParam *, gint *, GimpParam **);
-
-
 
 // Declare plugin entry points
 GimpPlugInInfo PLUG_IN_INFO =
@@ -46,15 +40,11 @@ typedef struct
     gint  scaler_mode;
 } PluginPixelArtScalerVals;
 
-
 // Default settings for semi-persistant plugin config
 static PluginPixelArtScalerVals plugin_config_vals =
 {
     0  // scaler_mode, default is HQ2X
 };
-
-
-
 
 MAIN()
 
@@ -68,7 +58,6 @@ static void query(void)
         { GIMP_PDB_DRAWABLE, "drawable",    "Input drawable" },
         { GIMP_PDB_INT32,    "scalar-mode", "Scaler mode to use for up-scaling the image (0-N)" }
     };
-
 
     gimp_install_procedure (PLUG_IN_PROCEDURE,
                             "Pixel Art Scalers",
@@ -86,10 +75,6 @@ static void query(void)
 
     gimp_plugin_menu_register (PLUG_IN_PROCEDURE, "<Image>/Filters/Render");
 }
-
-
-
-
 
 // The run function
 static void run(const gchar      * name,
@@ -117,10 +102,8 @@ static void run(const gchar      * name,
     // return_values[0].data.d_status = GIMP_PDB_SUCCESS;
     return_values[0].data.d_status = status;
 
-
     // Initialize the scalers
     scalers_init();
-
 
     switch (run_mode)
     {

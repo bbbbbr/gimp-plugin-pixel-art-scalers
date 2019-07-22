@@ -24,42 +24,43 @@
 
 // List of available scalers
 // Order here controls order in dialog drop-down selector
+enum scalev_list
+{
+    SCALEV_ENUM_FIRST = 0,
+
+    SCALEV_2X = SCALEV_ENUM_FIRST,
+    SCALEV_3X,
+    SCALEV_4X,
+
+    SCALEV_ENUM_LAST
+};
+
 enum scaler_list
 {
     SCALER_ENUM_FIRST = 0,
 
-    SCALER_2X_HQX = SCALER_ENUM_FIRST,
-    SCALER_2X_HRIS,
-    SCALER_2X_XBR,
-    SCALER_2X_SCALEX,
-    SCALER_2X_GSAMPLE,
-    SCALER_2X_NEAREST,
-
-    SCALER_3X_HQX,
-    SCALER_3X_HRIS,
-    SCALER_3X_XBR,
-    SCALER_3X_SCALEX,
-    SCALER_3X_GSAMPLE,
-    SCALER_3X_NEAREST,
-
-    SCALER_4X_HQX,
-    SCALER_4X_XBR,
-    SCALER_4X_SCALEX,
-    SCALER_4X_GSAMPLE,
-    SCALER_4X_NEAREST,
+    SCALER_HQX = SCALER_ENUM_FIRST,
+    SCALER_HRIS,
+    SCALER_XBR,
+    SCALER_SCALEX,
+    SCALER_GSAMPLE,
+    SCALER_NEAREST,
 
     SCALER_ENUM_LAST
 };
 
-
+typedef struct
+{
+    void (*function)(uint32_t*, uint32_t*, int, int);
+    int  factor;
+    char name[SCALER_STR_MAX];
+} scaler_factor_info;
 
 typedef struct
 {
-    void (*scaler_function)(uint32_t*, uint32_t*, int, int);
-    int  scale_factor;
+    scaler_factor_info scale[SCALEV_ENUM_LAST];
     char scaler_name[SCALER_STR_MAX];
 } scaler_info;
-
 
 typedef struct
 {
@@ -75,18 +76,21 @@ typedef struct
 } scaled_output_info;
 
 const char * scaler_name_get(gint);
-gint scaler_scale_factor_get(gint);
+const char * scaler_namevalue_get(gint);
 
 void scaler_mode_set(gint);
 gint scaler_mode_get(void);
+void scaler_factor_set(gint);
+gint scaler_factor_get(void);
+gint scaler_factor_index_get(void);
 
 scaled_output_info * scaled_info_get(void);
 
 void scalers_init(void);
 void pixel_art_scalers_release_resources(void);
-void scaler_apply(int, uint32_t *, uint32_t *, int, int);
+void scaler_apply(int, int,  uint32_t *, uint32_t *, int, int);
 
-gint scaled_output_check_reapply_scalers(gint, gint, gint);
+gint scaled_output_check_reapply_scalers(gint, gint, gint, gint);
 void scaled_output_check_reallocate(gint, gint, gint);
 
 void scaled_output_init(void);

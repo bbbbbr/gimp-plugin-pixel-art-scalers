@@ -13,7 +13,7 @@ Supported image scalers:
  * Gsample (gsample2x, gsample3x, gsample4x)
  * Nearest Neighbor (nearest2x, nearest3x, nearest4x)
 
-![GIMP Image Editor using Pixel Art Scalers Plugin](https://raw.githubusercontent.com/bbbbbr/gimp-plugin-pixel-art-scalers/master/info/gimp-plugin-pixel-art-scalers.png)
+![GIMP Image Editor using Pixel Art Scalers Plugin](info/gimp-plugin-pixel-art-scalers.png)
 
 
 OS binaries available for:
