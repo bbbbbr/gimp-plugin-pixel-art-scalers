@@ -64,5 +64,6 @@ typedef struct
 uint8_t ByteClamp(int c);
 ARGBpixel ARGBtoPixel(uint32_t targb);
 uint32_t PixeltoARGB(ARGBpixel tp);
+ARGBpixel threshold_bimod (uint32_t *, int, int);
 
 #endif //__COMMON_RIS_H_//

@@ -19,7 +19,7 @@
 
 // Downscale by a factor of N from source (sp) to dest (dp)
 // Expects 32 bit alignment (RGBA 4BPP) for both source and dest pointers
-void scaler_mean_x(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_factor)
+void scaler_mean_x(uint32_t *sp, uint32_t *dp, int Xres, int Yres, int scale_factor)
 {
     int bpp = BYTE_SIZE_RGBA_4BPP;
     int i, j, d, k, l, kj, li, m;
@@ -107,60 +107,53 @@ void scaler_mean_4x(uint32_t * sp,  uint32_t * dp, int Xres, int Yres)
 
 int pixel_compare(ARGBpixel a, ARGBpixel b)
 {
-    int d;
-    double imd, imx = 0.0;
+    int d, imd, imr = 0;
     for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
     {
         imd = (int)a.c[d];
         imd -= (int)b.c[d];
-        imx += ABS(imd);
+        imr += ABS(imd);
     }
 
-    return imx;
+    return imr;
 }
 
 // Downscale by a factor of N from source (sp) to dest (dp)
 // Expects 32 bit alignment (RGBA 4BPP) for both source and dest pointers
-void reduce_x(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_factor)
+void reduce_x(uint32_t *sp, uint32_t *dp, int Xres, int Yres, int scale_factor)
 {
     int bpp = BYTE_SIZE_RGBA_4BPP;
     int i, j, d, k, l, kj, li, m, imin;
     int n = scale_factor * scale_factor;
+    int nres = Xres * Yres;
     uint32_t wt;
     ARGBpixel w[n];
-    ARGBpixel wmax, wmin, wm, wr;
+    ARGBpixel wmean, wm, wr;
     uint32_t *dest = (uint32_t *) dp;
-    double dist, distmin;
+    int dist, distmin;
 
     double imx, imxs[BYTE_SIZE_RGBA_4BPP];
 
+    wmean = threshold_bimod (sp, Xres, Yres);
     for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
     {
-        wmax.c[d] = 0;
-        wmin.c[d] = 255;
         imxs[d] = 0.0;
     }
-    for (j = 0; j < Yres; j+=scale_factor)
+    for (k = 0; k < nres; k++)
     {
-        kj = j * Xres;
-        for (i = 0; i < Xres; i+=scale_factor)
+        wt = *(sp + k);
+        wm = ARGBtoPixel(wt);
+        for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
         {
-            wt = *(sp + kj + i);
-            wm = ARGBtoPixel(wt);
-            for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
-            {
-                wmax.c[d] = MAX(wmax.c[d], wm.c[d]);
-                wmin.c[d] = MIN(wmin.c[d], wm.c[d]);
-                imx = (double)wm.c[d];
-                imxs[d] += imx;
-            }
+            imx = (double)wm.c[d];
+            imxs[d] += imx;
         }
     }
     for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
     {
-        imxs[d] /= (Xres * Yres);
-        imxs[d] *= 2;
-        imxs[d] -= (double)(wmax.c[d] + wmin.c[d]);
+        imxs[d] /= (double)nres;
+        imx = (double)wmean.c[d];
+        imxs[d] -= imx;
     }
     for (j = 0; j < Yres; j+=scale_factor)
     {
@@ -187,7 +180,7 @@ void reduce_x(uint32_t *sp,  uint32_t *dp, int Xres, int Yres, int scale_factor)
                     imx += (double)w[k].c[d];
                 }
                 imx /= (double)n;
-                imx += imxs[d];
+                imx -= imxs[d];
                 wr.c[d] = ByteClamp((int)(imx + 0.5));
             }
             imin = 0;

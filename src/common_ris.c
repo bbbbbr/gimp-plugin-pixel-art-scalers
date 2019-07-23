@@ -42,3 +42,53 @@ uint32_t PixeltoARGB(ARGBpixel tp)
 
     return targb;
 }
+
+ARGBpixel threshold_bimod (uint32_t *sp, int Xres, int Yres)
+{
+    unsigned k, n, d, im;
+    double T, Tw, Tb, Tn, iw, ib;
+    uint32_t pt;
+    ARGBpixel p, threshold;
+    n = Xres * Yres;
+
+    for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
+    {
+        T = 127.5;
+        Tn = 0.0;
+        while ( T != Tn )
+        {
+            Tn = T;
+            Tb = 0.0;
+            Tw = 0.0;
+            ib = 0.0;
+            iw = 0.0;
+            for (k = 0; k < n; k++ )
+            {
+                pt = *(sp + k);
+                p = ARGBtoPixel(pt);
+                im = p.c[d];
+                if (im > T)
+                {
+                    Tw += im;
+                    iw++;
+                } else {
+                    Tb += im;
+                    ib++;
+                }
+            }
+            if (iw == 0.0 && ib == 0.0)
+            {
+                T = Tn;
+            } else if (iw == 0.0) {
+                T = Tb/ib;
+            } else if (ib == 0.0) {
+                T = Tw/iw;
+            } else {
+                T = ((Tw/iw) + (Tb/ib)) / 2.0;
+            }
+        }
+        threshold.c[d] = ByteClamp((int)(T + 0.5));
+    }
+
+    return threshold;
+}
