@@ -118,6 +118,20 @@ int pixel_compare(ARGBpixel a, ARGBpixel b)
     return imr;
 }
 
+ARGBpixel pixel_mirror(ARGBpixel a, ARGBpixel b)
+{
+    int d, imm;
+    for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
+    {
+        imm = (int)a.c[d];
+        imm += imm;
+        imm -= (int)b.c[d];
+        a.c[d] = ByteClamp(imm);;
+    }
+
+    return a;
+}
+
 // Downscale by a factor of N from source (sp) to dest (dp)
 // Expects 32 bit alignment (RGBA 4BPP) for both source and dest pointers
 void reduce_x(uint32_t *sp, uint32_t *dp, int Xres, int Yres, int scale_factor)
@@ -128,33 +142,13 @@ void reduce_x(uint32_t *sp, uint32_t *dp, int Xres, int Yres, int scale_factor)
     int nres = Xres * Yres;
     uint32_t wt;
     ARGBpixel w[n];
-    ARGBpixel wmean, wm, wr;
+    ARGBpixel wm, wr;
     uint32_t *dest = (uint32_t *) dp;
     int dist, distmin;
 
-    double imx, imxs[BYTE_SIZE_RGBA_4BPP];
+    double imx;
 
-    wmean = threshold_bimod (sp, Xres, Yres);
-    for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
-    {
-        imxs[d] = 0.0;
-    }
-    for (k = 0; k < nres; k++)
-    {
-        wt = *(sp + k);
-        wm = ARGBtoPixel(wt);
-        for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
-        {
-            imx = (double)wm.c[d];
-            imxs[d] += imx;
-        }
-    }
-    for (d = 0; d < BYTE_SIZE_RGBA_4BPP; d++)
-    {
-        imxs[d] /= (double)nres;
-        imx = (double)wmean.c[d];
-        imxs[d] -= imx;
-    }
+    wm = threshold_bimod (sp, Xres, Yres);
     for (j = 0; j < Yres; j+=scale_factor)
     {
         for (i = 0; i < Xres; i+=scale_factor)
@@ -180,11 +174,11 @@ void reduce_x(uint32_t *sp, uint32_t *dp, int Xres, int Yres, int scale_factor)
                     imx += (double)w[k].c[d];
                 }
                 imx /= (double)n;
-                imx -= imxs[d];
                 wr.c[d] = ByteClamp((int)(imx + 0.5));
             }
+            wr = pixel_mirror(wr, wm);
             imin = 0;
-            distmin = pixel_compare(wr, w[imin]);
+            distmin = pixel_compare(wr, w[0]);
             for (k = 0; k < n; k++)
             {
                 dist =  pixel_compare(wr, w[k]);
