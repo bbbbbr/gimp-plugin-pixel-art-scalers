@@ -81,8 +81,8 @@ const char * scaler_namevalue_get(gint);
 void scaler_mode_set(gint);
 gint scaler_mode_get(void);
 void scaler_factor_set(gint);
-gint scaler_factor_get(void);
 gint scaler_factor_index_get(void);
+gint scaler_factor_get(void);
 
 scaled_output_info * scaled_info_get(void);
 

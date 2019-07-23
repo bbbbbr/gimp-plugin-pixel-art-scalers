@@ -53,7 +53,6 @@ void scaler_mode_set(gint scaler_mode_new)
     // Don't update the mode if it's outside the allowed range
     if ((scaler_mode_new >= SCALER_ENUM_FIRST) && (scaler_mode_new < SCALER_ENUM_LAST))
         scaler_mode = scaler_mode_new;
-    scaler_factor = scalers[scaler_mode].scale[scaler_factor_index].factor;
 }
 
 // scaler_mode_get
@@ -76,7 +75,6 @@ void scaler_factor_set(gint scaler_factor_new)
     // Don't update the mode if it's outside the allowed range
     if ((scaler_factor_new >= SCALEV_ENUM_FIRST) && (scaler_factor_new < SCALEV_ENUM_LAST))
         scaler_factor_index = scaler_factor_new;
-    scaler_factor = scalers[scaler_mode].scale[scaler_factor_index].factor;
 }
 
 // scaler_scale_factor_get
@@ -89,9 +87,10 @@ gint scaler_factor_index_get(void)
 {
     return (scaler_factor_index);
 }
+
 gint scaler_factor_get(void)
 {
-    return (scaler_factor);
+    return (scalers[scaler_mode].scale[scaler_factor_index].factor);
 }
 
 // scaled_info_get
@@ -177,19 +176,18 @@ void scaled_output_init(void)
 // Calls selected scaler function
 // Updates valid_image to assist with caching
 //
-void scaler_apply(int scaler_mode, int scaler_factor, uint32_t * p_srcbuf, uint32_t * p_destbuf, int width, int height)
+void scaler_apply(int scaler_mode, int scaler_factor_index, uint32_t * p_srcbuf, uint32_t * p_destbuf, int width, int height)
 {
-
     if ((p_srcbuf == NULL) || (p_destbuf == NULL))
         return;
 
-    if ((scaler_mode < SCALER_ENUM_LAST) && (scaler_factor < SCALEV_ENUM_LAST))
+    if ((scaler_mode < SCALER_ENUM_LAST) && (scaler_factor_index < SCALEV_ENUM_LAST))
     {
         // Call the requested scaler function
-        scalers[scaler_mode].scale[scaler_factor].function((uint32_t*) p_srcbuf, (uint32_t*) p_destbuf, (int) width, (int) height);
+        scalers[scaler_mode].scale[scaler_factor_index].function((uint32_t*) p_srcbuf, (uint32_t*) p_destbuf, (int) width, (int) height);
         scaled_output.bpp = BYTE_SIZE_RGBA_4BPP;
         scaled_output.scaler_mode = scaler_mode;
-        scaled_output.scale_factor = scalers[scaler_mode].scale[scaler_factor].factor;
+        scaled_output.scale_factor = scalers[scaler_mode].scale[scaler_factor_index].factor;
         scaled_output.valid_image = TRUE;
     }
 }
@@ -358,5 +356,4 @@ void scalers_init(void)
     // Now set the default scaler
     scaler_mode = SCALER_HQX;
     scaler_factor_index = SCALEV_2X;
-    scaler_factor = scalers[scaler_mode].scale[scaler_factor_index].factor;
 }
