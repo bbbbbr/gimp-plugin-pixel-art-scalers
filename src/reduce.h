@@ -29,40 +29,23 @@
  * the author or the person who identified the work.
  */
 
-#ifndef __COMMON_RIS_H_
-#define __COMMON_RIS_H_
+#ifndef __REDUCE_H_
+#define __REDUCE_H_
 
+#include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
-#define maskA  0xFF000000
-#define maskB  0x00FF0000
-#define maskG  0x0000FF00
-#define maskR  0x000000FF
-#define BYTE_SIZE_RGBA_4BPP  4
+#define REDUCE_2X  2
+#define REDUCE_3X  3
+#define REDUCE_4X  4
 
-#ifndef ABS
-#define ABS(A) ((A) < 0 ? (-(A)) : (A))
-#endif
+void scaler_mean_2x(uint32_t *src,  uint32_t *dest, int width, int height);
+void scaler_mean_3x(uint32_t *src,  uint32_t *dest, int width, int height);
+void scaler_mean_4x(uint32_t *src,  uint32_t *dest, int width, int height);
+void reduce_2x(uint32_t *src,  uint32_t *dest, int width, int height);
+void reduce_3x(uint32_t *src,  uint32_t *dest, int width, int height);
+void reduce_4x(uint32_t *src,  uint32_t *dest, int width, int height);
 
-#ifndef MIN
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-#endif
-
-#ifndef MAX
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-#endif
-
-#ifndef TRIM
-#define TRIM(x,a,b) (FA_MIN(FA_MAX(x,a),b))
-#endif
-
-typedef struct
-{
-    uint8_t c[4];
-} ARGBpixel;
-
-uint8_t ByteClamp(int c);
-ARGBpixel ARGBtoPixel(uint32_t targb);
-uint32_t PixeltoARGB(ARGBpixel tp);
-
-#endif //__COMMON_RIS_H_//
+#endif //__REDUCE_H_//

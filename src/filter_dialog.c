@@ -25,8 +25,8 @@ extern const char PLUG_IN_PROCEDURE[];
 extern const char PLUG_IN_ROLE[];
 extern const char PLUG_IN_BINARY[];
 
-static void dialog_scaled_preview_check_resize(GtkWidget *, gint, gint, gint);
-static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
+static void dialog_scaled_preview_check_resize(GtkWidget *, gint, gint, gint, gint);
+static void resize_image_and_apply_changes(GimpDrawable *, guchar *);
 static void on_settings_scaler_combo_changed (GtkComboBox *, gpointer);
 static void on_settings_scalev_combo_changed(GtkComboBox *combo, gpointer callback_data);
 gboolean preview_scaled_size_allocate_event(GtkWidget *, GdkEvent *, GtkWidget *);
@@ -53,7 +53,6 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
     gboolean   run;
     gint       idx;
-
 
     gimp_ui_init (PLUG_IN_BINARY, FALSE);
 
@@ -234,25 +233,26 @@ static void on_settings_scalev_combo_changed(GtkComboBox *combo, gpointer callba
 // Called from pixel_art_scalers_run() which is used for
 // previewing and final rendering of the selected scaler mode
 //
-static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint width_new, gint height_new, gint scale_factor_new)
+static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint width_new, gint height_new, gint scale_factor_new, gint scale_direction_new)
 {
-    gint width_current, height_current;
+    gint width_current, height_current, width, height;
 
     // Get current size for scaled preview area
     gtk_widget_get_size_request (preview_scaled, &width_current, &height_current);
 
+    width  = scaler_size(scale_factor_new, scale_direction_new, width_new);
+    height = scaler_size(scale_factor_new, scale_direction_new, height_new);
     // Only resize if the width, height or scaling changed
-    if ( (width_current  != (width_new  * scale_factor_new)) ||
-            (height_current != (height_new * scale_factor_new)) )
+    if ((width_current  != width) || (height_current != height))
     {
         // Resize scaled preview area
-        gtk_widget_set_size_request (preview_scaled, width_new * scale_factor_new, height_new * scale_factor_new);
+        gtk_widget_set_size_request (preview_scaled, width, height);
 
         // when set_size_request and then draw are called repeatedly on a preview_area
         // it causes redraw glitching in the surrounding scrolled_window region
         // Calling set_max_size appears to fix this
         // (though it may be treating the symptom and not the cause of the glitching)
-        gimp_preview_area_set_max_size(GIMP_PREVIEW_AREA (preview_scaled), width_new * scale_factor_new, height_new * scale_factor_new);
+        gimp_preview_area_set_max_size(GIMP_PREVIEW_AREA (preview_scaled), width, height);
     }
 }
 
@@ -283,7 +283,6 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     scaled_output_info * scaled_output;
 
     scaled_output = scaled_info_get();
-    scale_factor = scaler_factor_get();
     scale_factor_index = scaler_factor_index_get();
 
     // Get the working image area for either the preview sub-window or the entire image
@@ -292,7 +291,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
         gimp_preview_get_position (preview, &x, &y);
         gimp_preview_get_size (preview, &width, &height);
 
-        dialog_scaled_preview_check_resize(preview_scaled, width, height, scale_factor);
+        dialog_scaled_preview_check_resize(preview_scaled, width, height, scaler_factor_get(), scaler_direction_get());
     }
     else if (! gimp_drawable_mask_intersect (drawable->drawable_id, &x, &y, &width, &height))
     {
@@ -303,9 +302,9 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     bpp = drawable->bpp;
 
     // Allocate output buffer for upscaled image
-    scaled_output_check_reallocate(scale_factor, width, height);
+    scaled_output_check_reallocate(scaler_factor_get(), scaler_direction_get(), width, height);
 
-    if (scaled_output_check_reapply_scalers(scaler_mode_get(), scaler_factor_get(), x, y))
+    if (scaled_output_check_reapply_scalers(scaler_mode_get(), scaler_factor_get(), scaler_direction_get(), x, y))
     {
 
         // ====== GET THE SOURCE IMAGE ======
@@ -348,7 +347,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
         }
 
         // Apply image result with full resize
-        resize_image_and_apply_changes(drawable, (guchar *) scaled_output->p_scaledbuf, scaled_output->scale_factor);
+        resize_image_and_apply_changes(drawable, (guchar *) scaled_output->p_scaledbuf);
     }
 
     // Free the working buffer
@@ -368,11 +367,14 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 // * guchar * buffer       : the previously rendered scaled output
 // * guint    scale_factor : image scale multiplier
 //
-void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbuf, guint scale_factor)
+void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbuf)
 {
     GimpPixelRgn  dest_rgn;
-    gint          x,y, width, height;
+    gint          x, y, width, height;
     GimpDrawable  * resized_drawable;
+    scaled_output_info * scaled_output;
+
+    scaled_output = scaled_info_get();
 
     if (! gimp_drawable_mask_intersect (drawable->drawable_id, &x, &y, &width, &height))
         return;
@@ -381,7 +383,7 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbu
     gimp_image_undo_group_start(gimp_item_get_image(drawable->drawable_id));
 
     // Resize source image
-    if (gimp_image_resize(gimp_item_get_image(drawable->drawable_id), width * scale_factor, height * scale_factor, 0,0))
+    if (gimp_image_resize(gimp_item_get_image(drawable->drawable_id), scaled_output->width, scaled_output->height, 0,0))
     {
 
         // Resize the current layer to match the resized image
@@ -393,16 +395,16 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbu
         // Initialize destination pixel region with drawable
         // TRUE,  TRUE  : region will be used to write to the shadow tiles
         //                i.e. make changes that will be written back to source tiles
-        gimp_pixel_rgn_init (&dest_rgn, resized_drawable, 0, 0, width * scale_factor, height * scale_factor, TRUE, TRUE);
+        gimp_pixel_rgn_init (&dest_rgn, resized_drawable, 0, 0, scaled_output->width, scaled_output->height, TRUE, TRUE);
 
         // Copy the previously rendered scaled output buffer
         // to the shadow image buffer in the drawable
-        gimp_pixel_rgn_set_rect (&dest_rgn, (guchar *) p_scaledbuf, 0, 0, width * scale_factor, height * scale_factor);
+        gimp_pixel_rgn_set_rect (&dest_rgn, (guchar *) p_scaledbuf, 0, 0, scaled_output->width, scaled_output->height);
 
         // Apply the changes to the image (merge shadow, update drawable)
         gimp_drawable_flush (resized_drawable);
         gimp_drawable_merge_shadow (resized_drawable->drawable_id, TRUE);
-        gimp_drawable_update (resized_drawable->drawable_id, 0, 0, width * scale_factor, height * scale_factor);
+        gimp_drawable_update (resized_drawable->drawable_id, 0, 0, scaled_output->width, scaled_output->height);
 
         // Free the extra resized drawable
         gimp_drawable_detach (resized_drawable);

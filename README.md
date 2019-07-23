@@ -12,6 +12,8 @@ Supported image scalers:
  * ScaleX (scale2x, scale3x, scale4x)
  * Gsample (gsample2x, gsample3x, gsample4x)
  * Nearest Neighbor (nearest2x, nearest3x, nearest4x)
+ * Mean (mean/2, mean/3, mean/4)
+ * Reduce (reduce/2, reduce/3, reduce/4)
 
 ![GIMP Image Editor using Pixel Art Scalers Plugin](info/gimp-plugin-pixel-art-scalers.png)
 
