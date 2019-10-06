@@ -5,17 +5,16 @@ GIMP plugin for rescaling images using Pixel Art Scalers
 
 These scalers are able to resize graphics in a way that avoids both bluring and pixelation, while also preserving the look and feel of the image. They are commonly used for upscaling pixel art from console games when run in an emulator. They can be useful in other realms too.
 
+Download compiled executables here: 
+ * [Linux GIMP 2.8+ x64](/bin/linux)
+ * [Windows GIMP 2.10.12+ x32](/bin/windows)
+ 
 Supported image scalers:
  * HQX (hq2x, hq3x, hq4x)
  * XBR (xbr2x, xbr3x, xbr4x)
  * ScaleX (scale2x, scale3x, scale4x)
 
 ![GIMP Image Editor using Pixel Art Scalers Plugin](https://raw.githubusercontent.com/bbbbbr/gimp-plugin-pixel-art-scalers/master/info/gimp-plugin-pixel-art-scalers.png)
-
-
-OS binaries available for:
- * Linux
- * Windows
 
 
 Hints:
@@ -35,13 +34,23 @@ Hints:
 Native compile/install on Linux using below.
 
 ```
-gimptool-2.0 --install (TODO).c
-    or
- make (and then copy to your GIMP plugin folder, depends on version)
+If GIMP & build tools not yet installed:
+(example for debian/ubuntu/mint)
+ * sudo apt install gimp
+ * sudo apt install build-essential
+ * sudo apt install libgimp2.0-dev
+ 
+Then: 
+* cd gimp-rom-bin
+* make
+
+Then copy the resulting "plugin-pixel-art-scalers" to your GIMP plugin folder, depends on version
 
 Plug-in folder locations:
- Linux: ~/.gimp-2.8/plug-ins
+ Linux: ~/.gimp-2.8/plug-ins  , or ~/.config/GIMP/2.10/plug-ins
  Windows: C:\Program Files\GIMP 2\lib\gimp\2.0\plug-ins
 
 ```
+Guide for [Cross-compiling to Windows on Linux](https://github.com/bbbbbr/gimp-rom-bin/blob/master/doc/GIMP%20jhbuild%20for%20Windows%20on%20Linux.md)
+
 
