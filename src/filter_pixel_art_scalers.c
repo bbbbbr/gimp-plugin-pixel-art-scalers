@@ -16,6 +16,8 @@
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
 
+#include "filter_pixel_art_scalers.h"
+
 #include "filter_dialog.h"
 #include "filter_scalers.h"
 
@@ -32,6 +34,7 @@ static void run(const gchar *, gint, const GimpParam *, gint *, GimpParam **);
 
 
 
+
 // Declare plugin entry points
 GimpPlugInInfo PLUG_IN_INFO = {
     NULL,
@@ -40,16 +43,13 @@ GimpPlugInInfo PLUG_IN_INFO = {
     run
 };
 
-typedef struct
-{
-  gint  scaler_mode;
-} PluginPixelArtScalerVals;
-
 
 // Default settings for semi-persistant plugin config
 static PluginPixelArtScalerVals plugin_config_vals =
 {
-  0  // scaler_mode, default is HQ2X
+  0,  // scaler_mode, default is HQ2X
+  1,  // allow_semi_transparent_pixels
+  0,  // suppress_hidden_pixel_colors
 };
 
 
@@ -65,7 +65,9 @@ static void query(void)
         { GIMP_PDB_INT32,    "run-mode",    "The run mode { RUN-INTERACTIVE (0), RUN-NONINTERACTIVE (1) }" },
         { GIMP_PDB_IMAGE,    "image",       "Input image (unused)" },
         { GIMP_PDB_DRAWABLE, "drawable",    "Input drawable" },
-        { GIMP_PDB_INT32,    "scalar-mode", "Scaler mode to use for up-scaling the image (0-N)" }
+        { GIMP_PDB_INT32,    "scalar-mode", "Scaler mode to use for up-scaling the image (0-N)" },
+        { GIMP_PDB_INT32,    "allow-semi-transparent-pixels", "Allow semi-transparent pixels in scaled OUTPUT image (0-1)" },
+        { GIMP_PDB_INT32,    "suppress-hidden-pixel-colors",  "Suppress color from hidden pixels on INPUT image (0-1)" }
     };
 
 
@@ -124,26 +126,31 @@ static void run(const gchar      * name,
   switch (run_mode)
     {
     case GIMP_RUN_INTERACTIVE:
-      //  Try to retrieve plugin settings, then apply them
-      gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
-      scaler_mode_set(plugin_config_vals.scaler_mode);
+        //  Try to retrieve plugin settings, then apply them
+        gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
+        dialog_settings_set (&plugin_config_vals);
 
-      //  First acquire information with a dialog
-      if (! pixel_art_scalers_dialog (drawable))
-        return;
-      break;
+        //  First acquire information with a dialog
+        if (! pixel_art_scalers_dialog (drawable))
+            return;
+
+        break;
 
     case GIMP_RUN_NONINTERACTIVE:
-      // Read in non-interactive mode plug settings, then apply them
-      plugin_config_vals.scaler_mode = param[3].data.d_int32;
-      scaler_mode_set(plugin_config_vals.scaler_mode);
-      break;
+        // Read in non-interactive mode plug settings, then apply them
+        plugin_config_vals.scaler_mode = param[3].data.d_int32;
+        plugin_config_vals.allow_semi_transparent_pixels = param[4].data.d_int32;
+        plugin_config_vals.suppress_hidden_pixel_colors = param[5].data.d_int32;
+        // Set settings/config in dialog
+        dialog_settings_set (&plugin_config_vals);
+        break;
 
     case GIMP_RUN_WITH_LAST_VALS:
-     //  Try to retrieve plugin settings, then apply them
-     gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
-     scaler_mode_set(plugin_config_vals.scaler_mode);
-      break;
+        //  Try to retrieve plugin settings, then apply them
+        gimp_get_data (PLUG_IN_PROCEDURE, &plugin_config_vals);
+        dialog_settings_set (&plugin_config_vals);
+
+        break;
 
     default:
       break;
@@ -165,7 +172,7 @@ static void run(const gchar      * name,
 
           // Retrieve and then save plugin config settings
           if (run_mode == GIMP_RUN_INTERACTIVE)
-            plugin_config_vals.scaler_mode = scaler_mode_get();
+            dialog_settings_get (&plugin_config_vals);
             gimp_set_data (PLUG_IN_PROCEDURE, &plugin_config_vals, sizeof (PluginPixelArtScalerVals));
         }
       else

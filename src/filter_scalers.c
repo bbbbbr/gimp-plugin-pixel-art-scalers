@@ -84,6 +84,14 @@ scaled_output_info * scaled_info_get(void) {
 }
 
 
+// scaled_output_invalidate
+//
+// Flags the scaled output as requiring a redraw
+void scaled_output_invalidate() {
+    scaled_output.valid_image = FALSE;
+}
+
+
 // scaled_output_check_reapply_scalers
 //
 // Checks whether the scaler needs to be re-applied
@@ -234,6 +242,118 @@ void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
         p_4bpp += 4;  // Advance 4BPP image pointer to next pixel
         idx += 4;
     }
+}
+
+
+
+// Forces partially transparent pixels below
+// a given threshold to entirely transparent.
+//
+// Used to prevent filters from adding anti-aliased edges.
+//
+// Typically operates on OUTPUT image
+//
+// NOTE: Expects 4bpp image, will abort if not
+//
+void buffer_partial_alpha_to_full_transparent(guchar * p_buf, glong buf_size, gint bpp, guchar alpha_threshold, guchar replace_value) {
+
+    // Require 4bpp (RGBA)
+    if (bpp != BYTE_SIZE_RGBA_4BPP)
+        return;
+
+    // Iterates through the buffer from START to END
+    while(buf_size) {
+
+        // if ALPHA value is below threshold, force it to 0
+        if (p_buf[3] <= alpha_threshold)
+            p_buf[3] = replace_value;
+
+        p_buf += 4;  // Advance image pointer to next pixel
+        buf_size -= 4; // Decrenebt size counter
+    }
+}
+
+
+// Forces partially transparent pixels below
+// a given threshold to entirely transparent.
+//
+// Used to prevent filters from adding anti-aliased edges.
+//
+// Typically operates on INPUT image
+//
+// NOTE: Expects 4bpp image, will abort if not
+//
+void buffer_set_alpha_hidden_to_adjacent_visible(guchar * p_buf, glong buf_size, gint bpp, gint width, gint height, guchar alpha_threshold) {
+
+    gint       x,y;
+    gint       adj_x,adj_y;
+    gint       col[3];
+    gint       col_count;
+    gint       col_weight;
+    guchar *   p_adj_px;
+
+    // Require 4bpp (RGBA)
+    if (bpp != BYTE_SIZE_RGBA_4BPP)
+        return;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+
+            // if pixel ALPHA value is below threshold, replace it's color
+            if (p_buf[3] <= alpha_threshold) {
+
+
+                // Reset color accumulator
+                col[0] = col[1] = col[2] = 0;
+                col_count = 0;
+
+                // Check all adjacent pixels to see if
+                // they have desired opacity to donate color
+                for (adj_y = -1; adj_y <= 1; adj_y++) {
+                    for (adj_x = -1; adj_x <= 1; adj_x++) {
+
+                        // Stay within image bounds
+                        if (((x + adj_x) >= 0) &&
+                            ((x + adj_x) < width) &&
+                            ((y + adj_y) >= 0) &&
+                            ((y + adj_y) < height)) {
+
+                            // Set pointer to the adjacent pixel
+                            p_adj_px = p_buf + ((adj_x * bpp) + (adj_y * width * bpp));
+
+                            // Accumulate it's color values
+                            if (p_adj_px[3] > alpha_threshold)
+                            {
+                                // Weight directly adjacent colors twice
+                                // as much as diaglonally adjacent
+                                if ((adj_x == 0) || (adj_y == 0))
+                                    col_weight = HIDDEN_PIXEL_BLEND_WEIGHT_ADJACENT;
+                                else
+                                    col_weight = HIDDEN_PIXEL_BLEND_WEIGHT_DIAGONAL;
+
+                                col[0] += p_adj_px[0] * col_weight;
+                                col[1] += p_adj_px[1] * col_weight;
+                                col[2] += p_adj_px[2] * col_weight;
+                                col_count += col_weight;
+
+                                // col_count = 1;
+                            }
+                        }
+                    }
+                }
+
+                // Set pixel to mix of neighboring pixel colors
+                // TODO: improve color mixing algorithm
+                if (col_count > 0) {
+                    p_buf[0] = col[0] / col_count;
+                    p_buf[1] = col[1] / col_count;
+                    p_buf[2] = col[2] / col_count;
+                }
+            }
+
+            p_buf += 4;  // Advance image pointer to next pixel
+        } // for (y = 0; y < height; y++) {
+    } // for (x = 0; x < width; x++) {
 }
 
 

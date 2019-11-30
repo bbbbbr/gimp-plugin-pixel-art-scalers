@@ -18,6 +18,7 @@
 #include <libgimp/gimp.h>
 #include <libgimp/gimpui.h>
 
+#include "filter_pixel_art_scalers.h"
 #include "filter_dialog.h"
 #include "filter_scalers.h"
 
@@ -29,13 +30,19 @@ extern const char PLUG_IN_BINARY[];
 
 static void dialog_scaled_preview_check_resize(GtkWidget *, gint, gint, gint);
 static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
+
+// UI handling
 static void on_settings_scaler_combo_changed (GtkComboBox *, gpointer);
+
+static void on_settings_semi_transparency_checkbutton_changed(GtkToggleButton *, gpointer);
+static void on_setting_hidden_colors_checkbutton_changed(GtkToggleButton *, gpointer);
+
 gboolean preview_scaled_size_allocate_event(GtkWidget *, GdkEvent *, GtkWidget *);
 
+static PluginPixelArtScalerVals dialog_settings;
 
 // Widget for displaying the upscaled image preview
 static GtkWidget * preview_scaled;
-
 
 
 /*******************************************************/
@@ -52,6 +59,9 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   GtkWidget * settings_table;
   GtkWidget * settings_scaler_combo;
   GtkWidget * settings_scaler_label;
+
+  GtkWidget * settings_semi_transparency_checkbutton;
+  GtkWidget * settings_hidden_colors_checkbutton;
 
   gboolean   run;
   gint       idx;
@@ -135,11 +145,11 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
     g_signal_connect(preview_scaled, "size-allocate", G_CALLBACK(preview_scaled_size_allocate_event), (gpointer)scaled_preview_window);
 
 
-    // Create 1 x 3 table for Settings, non-homogonous sizing, attach to main vbox
+    // Create 1 x 4 table for Settings, non-homogonous sizing, attach to main vbox
     // TODO: Consider changing from a table to a grid (tables are deprecated)
     settings_table = gtk_table_new (1, 3, FALSE);
     gtk_box_pack_start (GTK_BOX (main_vbox), settings_table, FALSE, FALSE, 0);
-    gtk_table_set_homogeneous(GTK_TABLE (settings_table), TRUE);
+    gtk_table_set_homogeneous(GTK_TABLE (settings_table), FALSE);
 
     // Create label and right-align it
     settings_scaler_label = gtk_label_new ("Scaler type:  " );
@@ -155,24 +165,59 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
     gtk_combo_box_set_active(GTK_COMBO_BOX(settings_scaler_combo), scaler_mode_get() );
 
 
+    // Transparency and alpha blending options
+    settings_semi_transparency_checkbutton = gtk_check_button_new_with_label("Allow semi-transparent pixels");
+    settings_hidden_colors_checkbutton = gtk_check_button_new_with_label("Suppress color from hidden pixels"); // "Suppress color for pixels below:"
+
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(settings_semi_transparency_checkbutton),
+                                 dialog_settings.allow_semi_transparent_pixels);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(settings_hidden_colors_checkbutton),
+                                 dialog_settings.suppress_hidden_pixel_colors);
+
+
     // Attach the label and combo to the table and show them all
     gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_label, 1, 2, 0, 1); // Middle of table
     gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_combo, 2, 3, 0, 1); // Right side of table
 
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_semi_transparency_checkbutton, 0, 1, 0, 1); // Left side of table
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_hidden_colors_checkbutton, 0, 1, 1, 2);     // Left side of table
+
+
+
+
     gtk_widget_show (settings_table);
     gtk_widget_show (settings_scaler_label);
     gtk_widget_show (settings_scaler_combo);
+    gtk_widget_show (settings_semi_transparency_checkbutton);
+    gtk_widget_show (settings_hidden_colors_checkbutton);
 
 
-    // Connect the changed signal to update the scaler mode
+    // Connect the changed signal to update the UI controls
     g_signal_connect (settings_scaler_combo,
                       "changed",
                       G_CALLBACK (on_settings_scaler_combo_changed),
                       NULL);
 
-    // Then connect a second signal to trigger a preview update
+    g_signal_connect(G_OBJECT(settings_semi_transparency_checkbutton), "toggled",
+                      G_CALLBACK(on_settings_semi_transparency_checkbutton_changed),
+                      NULL);
+
+    g_signal_connect(G_OBJECT(settings_hidden_colors_checkbutton), "toggled",
+                      G_CALLBACK(on_setting_hidden_colors_checkbutton_changed),
+                      NULL);
+
+
+    // Then connect a second signal to trigger a preview updates
     g_signal_connect_swapped (settings_scaler_combo,
                               "changed",
+                              G_CALLBACK (gimp_preview_invalidate),
+                              preview);
+
+    g_signal_connect_swapped (settings_semi_transparency_checkbutton, "toggled",
+                              G_CALLBACK (gimp_preview_invalidate),
+                              preview);
+
+    g_signal_connect_swapped (settings_hidden_colors_checkbutton, "toggled",
                               G_CALLBACK (gimp_preview_invalidate),
                               preview);
 
@@ -189,6 +234,27 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 }
 
 
+// For calling plugin to set dialog settings, including in headless mode
+//
+void dialog_settings_set(PluginPixelArtScalerVals * p_plugin_config_vals) {
+
+    // Copy plugin settings to dialog settings
+    memcpy (&dialog_settings, p_plugin_config_vals, sizeof(PluginPixelArtScalerVals));
+    scaler_mode_set(dialog_settings.scaler_mode);
+
+}
+
+// For calling plugin to retrieve dialog settings (to persist for next-run)
+//
+void dialog_settings_get(PluginPixelArtScalerVals * p_plugin_config_vals) {
+
+    // Copy dialog settings to plugin settings
+    dialog_settings.scaler_mode = scaler_mode_get();
+    memcpy (p_plugin_config_vals, &dialog_settings, sizeof(PluginPixelArtScalerVals));
+}
+
+
+
 
 // preview_scaled_size_allocate_event
 //
@@ -199,23 +265,23 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 //
 gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event, GtkWidget *window)
 {
-    scaled_output_info * scaled_output;
+    scaled_output_info * p_scaled_output;
 
-    scaled_output = scaled_info_get();
+    p_scaled_output = scaled_info_get();
 
     if (widget == NULL)
       return 1; // Exit, failed
 
     // Redraw the scaled preview if it's available
-    if ( (scaled_output->p_scaledbuf != NULL) &&
-         (scaled_output->valid_image == TRUE) ) {
+    if ( (p_scaled_output->p_scaledbuf != NULL) &&
+         (p_scaled_output->valid_image == TRUE) ) {
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (widget),  // Calling widget should be preview_scaled
                                 0, 0,
-                                scaled_output->width,
-                                scaled_output->height,
+                                p_scaled_output->width,
+                                p_scaled_output->height,
                                 GIMP_RGBA_IMAGE,
-                                (guchar *) scaled_output->p_scaledbuf,
-                                scaled_output->width * BYTE_SIZE_RGBA_4BPP);
+                                (guchar *) p_scaled_output->p_scaledbuf,
+                                p_scaled_output->width * BYTE_SIZE_RGBA_4BPP);
     }
 
     return FALSE;
@@ -242,6 +308,24 @@ static void on_settings_scaler_combo_changed(GtkComboBox *combo, gpointer callba
         if (!(g_strcmp0(selected_string, scaler_name_get(idx))))
           scaler_mode_set(idx);
     }
+}
+
+
+static void on_settings_semi_transparency_checkbutton_changed(GtkToggleButton * p_togglebutton, gpointer callback_data) {
+
+    dialog_settings.allow_semi_transparent_pixels = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p_togglebutton));
+
+    // Request a preview image update
+    scaled_output_invalidate();
+}
+
+
+static void on_setting_hidden_colors_checkbutton_changed(GtkToggleButton * p_togglebutton, gpointer callback_data) {
+
+    dialog_settings.suppress_hidden_pixel_colors = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p_togglebutton));
+
+    // Request a preview image update
+    scaled_output_invalidate();
 }
 
 
@@ -305,12 +389,10 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     guint        scale_factor;
     uint32_t   * p_srcbuf = NULL;
     glong        srcbuf_size = 0;
-    scaled_output_info * scaled_output;
+    scaled_output_info * p_scaled_output;
 
-
-    scaled_output = scaled_info_get();
+    p_scaled_output = scaled_info_get();
     scale_factor = scaler_scale_factor_get( scaler_mode_get() );
-
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
@@ -360,14 +442,36 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
             buffer_add_alpha_byte((guchar *) p_srcbuf, srcbuf_size);
 
 
+        if (dialog_settings.suppress_hidden_pixel_colors) {
+            // Suppress hidden colors for INPUT pixels with alpha set to non-visible
+            // Those colors can often be for pixels that the creating tool
+            // "deleted" by making them non-visible (alpha = 0, etc)
+            buffer_set_alpha_hidden_to_adjacent_visible((guchar *) p_srcbuf,
+                                                       srcbuf_size,
+                                                       BYTE_SIZE_RGBA_4BPP, // Input image should already be forced to 4bpp RGBA
+                                                       width, height,
+                                                       HIDDEN_PIXEL_ALPHA_THRESHOLD); // Don't use colors at or below this threshold
+        }
+
 
         // ====== APPLY THE SCALER ======
 
         // Expects 4BPP RGBA in p_srcbuf, outputs same to p_scaledbuf
         scaler_apply(scaler_mode_get(),
                      p_srcbuf,
-                     scaled_output->p_scaledbuf,
+                     p_scaled_output->p_scaledbuf,
                      (int) width, (int) height);
+
+
+        if (! dialog_settings.allow_semi_transparent_pixels) {
+            // This will force partially transparent OUTPUT pixels to solid
+            buffer_partial_alpha_to_full_transparent((guchar *) p_scaled_output->p_scaledbuf,
+                                                     p_scaled_output->size_bytes,
+                                                     p_scaled_output->bpp,
+                                                     ALPHA_PIXEL_REPLACE_THRESHOLD, // alpha_threshold (values at or below this are replaced)
+                                                     ALPHA_PIXEL_REPLACE_VALUE);    // alpha value to use when replacing, typically 0, fully transparent
+        }
+
     }
     // Filter is done, apply the update
     if (preview) {
@@ -376,24 +480,24 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
         // Expects 4BPP RGBA
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
                                 0, 0,
-                                scaled_output->width,
-                                scaled_output->height,
+                                p_scaled_output->width,
+                                p_scaled_output->height,
                                 GIMP_RGBA_IMAGE,
-                                (guchar *) scaled_output->p_scaledbuf,
-                                scaled_output->width * BYTE_SIZE_RGBA_4BPP);
+                                (guchar *) p_scaled_output->p_scaledbuf,
+                                p_scaled_output->width * BYTE_SIZE_RGBA_4BPP);
     }
     else
     {
         // Remove the alpha byte from the scaled output if the source image was 3BPP RGB
-        if ((bpp == BYTE_SIZE_RGB_3BPP) & (scaled_output->bpp != BYTE_SIZE_RGB_3BPP)) { // i.e. !has_alpha
-            buffer_remove_alpha_byte((guchar *) scaled_output->p_scaledbuf, scaled_output->size_bytes);
-            scaled_output->bpp = BYTE_SIZE_RGB_3BPP;
+        if ((bpp == BYTE_SIZE_RGB_3BPP) & (p_scaled_output->bpp != BYTE_SIZE_RGB_3BPP)) { // i.e. !has_alpha
+            buffer_remove_alpha_byte((guchar *) p_scaled_output->p_scaledbuf, p_scaled_output->size_bytes);
+            p_scaled_output->bpp = BYTE_SIZE_RGB_3BPP;
         }
 
         // Apply image result with full resize
         resize_image_and_apply_changes(drawable,
-                                       (guchar *) scaled_output->p_scaledbuf,
-                                       scaled_output->scale_factor);
+                                       (guchar *) p_scaled_output->p_scaledbuf,
+                                       p_scaled_output->scale_factor);
     }
 
     // Free the working buffer
