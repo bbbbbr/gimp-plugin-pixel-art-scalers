@@ -32,14 +32,11 @@ void scaler_nearest_nx(uint32_t *, uint32_t *, int, int, int);
 void scaler_nearest_nx(uint32_t * sp,  uint32_t * dp, int Xres, int Yres, int scale_factor)
 {
     int       bpp;
-    int       x, y, sx, sb;
-    uint32_t * src, * dst;
+    int       x, y, sx;
     long      line_width_scaled;
 
     bpp = BYTE_SIZE_RGBA_4BPP;  // Assume 4BPP RGBA
     line_width_scaled = (Xres * scale_factor * (bpp/sizeof(uint32_t)) );
-    src = (uint32_t *) sp;
-    dst = (uint32_t *) dp;
 
 
     for (y=0; y < Yres; y++) {

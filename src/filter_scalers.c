@@ -87,7 +87,7 @@ scaled_output_info * scaled_info_get(void) {
 // scaled_output_invalidate
 //
 // Flags the scaled output as requiring a redraw
-void scaled_output_invalidate() {
+void scaled_output_invalidate(void) {
     scaled_output.valid_image = FALSE;
 }
 

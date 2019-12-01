@@ -86,7 +86,7 @@
     void pixel_art_scalers_release_resources(void);
     void scaler_apply(int, uint32_t *, uint32_t *, int, int);
 
-    void scaled_output_invalidate();
+    void scaled_output_invalidate(void);
     gint scaled_output_check_reapply_scalers(gint, gint, gint);
     void scaled_output_check_reallocate(gint, gint, gint);
 
