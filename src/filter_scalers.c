@@ -255,7 +255,7 @@ void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 //
 // NOTE: Expects 4bpp image, will abort if not
 //
-void buffer_partial_alpha_to_full_transparent(guchar * p_buf, glong buf_size, gint bpp, guchar alpha_threshold, guchar replace_value) {
+void buffer_remove_partial_alpha(guchar * p_buf, glong buf_size, gint bpp, guchar alpha_threshold, guchar replace_value_below, guchar replace_value_above) {
 
     // Require 4bpp (RGBA)
     if (bpp != BYTE_SIZE_RGBA_4BPP)
@@ -266,7 +266,9 @@ void buffer_partial_alpha_to_full_transparent(guchar * p_buf, glong buf_size, gi
 
         // if ALPHA value is below threshold, force it to 0
         if (p_buf[3] <= alpha_threshold)
-            p_buf[3] = replace_value;
+            p_buf[3] = replace_value_below;
+        else
+            p_buf[3] = replace_value_above;
 
         p_buf += 4;  // Advance image pointer to next pixel
         buf_size -= 4; // Decrenebt size counter

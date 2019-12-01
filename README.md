@@ -5,16 +5,21 @@ GIMP plugin for rescaling images using Pixel Art Scalers
 
 These scalers are able to resize graphics in a way that avoids both bluring and pixelation, while also preserving the look and feel of the image. They are commonly used for upscaling pixel art from console games when run in an emulator. They can be useful in other realms too.
 
-Download compiled executables here: 
+Download compiled executables here:
  * [Linux GIMP 2.8+ x64](/bin/linux)
  * [Windows GIMP 2.10.12+ x32](/bin/windows)
- 
+
 Supported image scalers:
  * HQX (hq2x, hq3x, hq4x)
  * XBR (xbr2x, xbr3x, xbr4x)
  * ScaleX (scale2x, scale3x, scale4x)
 
 ![GIMP Image Editor using Pixel Art Scalers Plugin](https://raw.githubusercontent.com/bbbbbr/gimp-plugin-pixel-art-scalers/master/info/gimp-plugin-pixel-art-scalers.png)
+
+
+Options:
+ * Force semi-transparent pixels to fully opaque / transparent (edge aliasing)
+ * Suppress colors from alpha-hidden pixels (can sometimes cause discoloration at the edges)
 
 
 Hints:
@@ -39,8 +44,8 @@ If GIMP & build tools not yet installed:
  * sudo apt install gimp
  * sudo apt install build-essential
  * sudo apt install libgimp2.0-dev
- 
-Then: 
+
+Then:
 * cd gimp-rom-bin
 * make
 

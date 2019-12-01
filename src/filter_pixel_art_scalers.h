@@ -7,9 +7,11 @@
 
     typedef struct
     {
-      gint  scaler_mode;
-      gint  allow_semi_transparent_pixels;
-      gint  suppress_hidden_pixel_colors;
+        gint  scaler_mode;
+        gint  remove_semi_transparent;
+        gint  remove_semi_transparent_threshold;
+        gint  suppress_hidden_pixel_colors;
+        gint  suppress_hidden_pixel_colors_threshold;
     } PluginPixelArtScalerVals;
 
 

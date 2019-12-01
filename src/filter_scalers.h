@@ -21,13 +21,14 @@
 
     #define SCALER_STR_MAX      30
 
-    #define ALPHA_PIXEL_REPLACE_THRESHOLD      254
-    #define ALPHA_PIXEL_REPLACE_VALUE          0
+    #define ALPHA_PIXEL_REPLACE_THRESHOLD_DEFAULT  254
+    #define ALPHA_PIXEL_REPLACE_VALUE_BELOW        0
+    #define ALPHA_PIXEL_REPLACE_VALUE_ABOVE        255
 
     #define HIDDEN_PIXEL_BLEND_WEIGHT_ADJACENT 4
     #define HIDDEN_PIXEL_BLEND_WEIGHT_DIAGONAL 1
 
-    #define HIDDEN_PIXEL_ALPHA_THRESHOLD       32 // 0 works in many cases. Don't use colors at or below this threshold
+    #define HIDDEN_PIXEL_ALPHA_THRESHOLD_DEFAULT   32 // 0 works in many cases. Don't use colors at or below this threshold
 
 
     // List of available scalers
@@ -94,7 +95,7 @@
     void buffer_add_alpha_byte(guchar *, glong);
     void buffer_remove_alpha_byte(guchar *, glong);
 
-    void buffer_partial_alpha_to_full_transparent(guchar *, glong, gint, guchar, guchar);
+    void buffer_remove_partial_alpha(guchar *, glong, gint, guchar, guchar, guchar);
     void buffer_set_alpha_hidden_to_adjacent_visible(guchar *, glong, gint, gint, gint, guchar); //, guchar);
 
 #endif

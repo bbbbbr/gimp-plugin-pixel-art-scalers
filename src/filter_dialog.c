@@ -37,6 +37,9 @@ static void on_settings_scaler_combo_changed (GtkComboBox *, gpointer);
 static void on_settings_semi_transparency_checkbutton_changed(GtkToggleButton *, gpointer);
 static void on_setting_hidden_colors_checkbutton_changed(GtkToggleButton *, gpointer);
 
+static void on_settings_semi_transparency_spinbutton_changed(GtkSpinButton *, gpointer);
+static void on_setting_hidden_colors_spinbutton_changed(GtkSpinButton *, gpointer);
+
 gboolean preview_scaled_size_allocate_event(GtkWidget *, GdkEvent *, GtkWidget *);
 
 static PluginPixelArtScalerVals dialog_settings;
@@ -62,6 +65,8 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
   GtkWidget * settings_semi_transparency_checkbutton;
   GtkWidget * settings_hidden_colors_checkbutton;
+  GtkWidget * settings_semi_transparency_spinbutton;
+  GtkWidget * settings_hidden_colors_spinbutton;
 
   gboolean   run;
   gint       idx;
@@ -147,7 +152,7 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
     // Create 1 x 4 table for Settings, non-homogonous sizing, attach to main vbox
     // TODO: Consider changing from a table to a grid (tables are deprecated)
-    settings_table = gtk_table_new (1, 3, FALSE);
+    settings_table = gtk_table_new (1, 4, FALSE);
     gtk_box_pack_start (GTK_BOX (main_vbox), settings_table, FALSE, FALSE, 0);
     gtk_table_set_homogeneous(GTK_TABLE (settings_table), FALSE);
 
@@ -165,22 +170,39 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
     gtk_combo_box_set_active(GTK_COMBO_BOX(settings_scaler_combo), scaler_mode_get() );
 
 
-    // Transparency and alpha blending options
-    settings_semi_transparency_checkbutton = gtk_check_button_new_with_label("Allow semi-transparent pixels");
-    settings_hidden_colors_checkbutton = gtk_check_button_new_with_label("Suppress color from hidden pixels"); // "Suppress color for pixels below:"
+    // Transparency and alpha blending options (checkbox and value entry spin buttons)
+    settings_semi_transparency_checkbutton = gtk_check_button_new_with_label("Remove semi-transparency. Threshold :");
+    settings_semi_transparency_spinbutton = gtk_spin_button_new_with_range(0,254,1); // Min/Max/Step
 
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(settings_semi_transparency_checkbutton),
-                                 dialog_settings.allow_semi_transparent_pixels);
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(settings_hidden_colors_checkbutton),
-                                 dialog_settings.suppress_hidden_pixel_colors);
+    settings_hidden_colors_checkbutton = gtk_check_button_new_with_label("Suppress color for pixels below opacity :");
+    settings_hidden_colors_spinbutton = gtk_spin_button_new_with_range(0,254,1); // Min/Max/Step
+
+        // Load settigns for ui controls
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(settings_semi_transparency_checkbutton),
+                                     dialog_settings.remove_semi_transparent);
+        gtk_spin_button_set_value(GTK_SPIN_BUTTON(settings_semi_transparency_spinbutton),
+                                     dialog_settings.remove_semi_transparent_threshold);
+
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(settings_hidden_colors_checkbutton),
+                                     dialog_settings.suppress_hidden_pixel_colors);
+        gtk_spin_button_set_value(GTK_SPIN_BUTTON(settings_hidden_colors_spinbutton),
+                                     dialog_settings.suppress_hidden_pixel_colors_threshold);
+
+
+        // Enable/disable value inputs
+        gtk_widget_set_sensitive(settings_semi_transparency_spinbutton, dialog_settings.remove_semi_transparent == TRUE);
+        gtk_widget_set_sensitive(settings_hidden_colors_spinbutton, dialog_settings.suppress_hidden_pixel_colors == TRUE);
 
 
     // Attach the label and combo to the table and show them all
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_label, 1, 2, 0, 1); // Middle of table
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_combo, 2, 3, 0, 1); // Right side of table
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_label, 2, 3, 0, 1); // Middle of table
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_combo, 3, 4, 0, 1); // Right side of table
 
     gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_semi_transparency_checkbutton, 0, 1, 0, 1); // Left side of table
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_semi_transparency_spinbutton, 1, 2, 0, 1); // Left side of table
+
     gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_hidden_colors_checkbutton, 0, 1, 1, 2);     // Left side of table
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_hidden_colors_spinbutton, 1, 2, 1, 2);     // Left side of table
 
 
 
@@ -189,7 +211,9 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
     gtk_widget_show (settings_scaler_label);
     gtk_widget_show (settings_scaler_combo);
     gtk_widget_show (settings_semi_transparency_checkbutton);
+    gtk_widget_show (settings_semi_transparency_spinbutton);
     gtk_widget_show (settings_hidden_colors_checkbutton);
+    gtk_widget_show (settings_hidden_colors_spinbutton);
 
 
     // Connect the changed signal to update the UI controls
@@ -200,26 +224,32 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
     g_signal_connect(G_OBJECT(settings_semi_transparency_checkbutton), "toggled",
                       G_CALLBACK(on_settings_semi_transparency_checkbutton_changed),
-                      NULL);
+                      settings_semi_transparency_spinbutton); // Spin button is passed so it can be enabled/disabled
+    g_signal_connect (settings_semi_transparency_spinbutton, "value-changed",
+                      G_CALLBACK (on_settings_semi_transparency_spinbutton_changed), NULL);
+
 
     g_signal_connect(G_OBJECT(settings_hidden_colors_checkbutton), "toggled",
                       G_CALLBACK(on_setting_hidden_colors_checkbutton_changed),
-                      NULL);
+                      settings_hidden_colors_spinbutton); // Spin button is passed so it can be enabled/disabled
+    g_signal_connect (settings_hidden_colors_spinbutton, "value-changed",
+                      G_CALLBACK (on_setting_hidden_colors_spinbutton_changed), NULL);
 
 
     // Then connect a second signal to trigger a preview updates
-    g_signal_connect_swapped (settings_scaler_combo,
-                              "changed",
-                              G_CALLBACK (gimp_preview_invalidate),
-                              preview);
+    g_signal_connect_swapped (settings_scaler_combo, "changed",
+                              G_CALLBACK (gimp_preview_invalidate), preview);
 
     g_signal_connect_swapped (settings_semi_transparency_checkbutton, "toggled",
-                              G_CALLBACK (gimp_preview_invalidate),
-                              preview);
+                              G_CALLBACK (gimp_preview_invalidate), preview);
+    g_signal_connect_swapped (settings_semi_transparency_spinbutton, "value-changed",
+                              G_CALLBACK (gimp_preview_invalidate), preview);
+
 
     g_signal_connect_swapped (settings_hidden_colors_checkbutton, "toggled",
-                              G_CALLBACK (gimp_preview_invalidate),
-                              preview);
+                              G_CALLBACK (gimp_preview_invalidate), preview);
+    g_signal_connect_swapped (settings_hidden_colors_spinbutton, "value-changed",
+                              G_CALLBACK (gimp_preview_invalidate), preview);
 
 
   gtk_widget_show (dialog);
@@ -313,7 +343,10 @@ static void on_settings_scaler_combo_changed(GtkComboBox *combo, gpointer callba
 
 static void on_settings_semi_transparency_checkbutton_changed(GtkToggleButton * p_togglebutton, gpointer callback_data) {
 
-    dialog_settings.allow_semi_transparent_pixels = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p_togglebutton));
+    dialog_settings.remove_semi_transparent = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p_togglebutton));
+
+    // Enable/disable threshold input field alongside checkbox
+    gtk_widget_set_sensitive((GtkWidget *) callback_data, dialog_settings.remove_semi_transparent == TRUE);
 
     // Request a preview image update
     scaled_output_invalidate();
@@ -324,8 +357,23 @@ static void on_setting_hidden_colors_checkbutton_changed(GtkToggleButton * p_tog
 
     dialog_settings.suppress_hidden_pixel_colors = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(p_togglebutton));
 
+    // Enable/disable threshold input field alongside checkbox
+    gtk_widget_set_sensitive((GtkWidget *) callback_data, dialog_settings.suppress_hidden_pixel_colors == TRUE);
+
     // Request a preview image update
     scaled_output_invalidate();
+}
+
+
+static void on_settings_semi_transparency_spinbutton_changed(GtkSpinButton * spinbutton, gpointer callback_data) {
+    dialog_settings.remove_semi_transparent_threshold = gtk_spin_button_get_value_as_int(spinbutton);
+    scaled_output_invalidate(); // Request a preview image update
+}
+
+
+static void on_setting_hidden_colors_spinbutton_changed(GtkSpinButton * spinbutton, gpointer callback_data) {
+    dialog_settings.suppress_hidden_pixel_colors_threshold = gtk_spin_button_get_value_as_int(spinbutton);
+    scaled_output_invalidate(); // Request a preview image update
 }
 
 
@@ -450,7 +498,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
                                                        srcbuf_size,
                                                        BYTE_SIZE_RGBA_4BPP, // Input image should already be forced to 4bpp RGBA
                                                        width, height,
-                                                       HIDDEN_PIXEL_ALPHA_THRESHOLD); // Don't use colors at or below this threshold
+                                                       dialog_settings.suppress_hidden_pixel_colors_threshold); // Don't use colors at or below this threshold
         }
 
 
@@ -463,13 +511,14 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
                      (int) width, (int) height);
 
 
-        if (! dialog_settings.allow_semi_transparent_pixels) {
+        if (dialog_settings.remove_semi_transparent) {
             // This will force partially transparent OUTPUT pixels to solid
-            buffer_partial_alpha_to_full_transparent((guchar *) p_scaled_output->p_scaledbuf,
-                                                     p_scaled_output->size_bytes,
-                                                     p_scaled_output->bpp,
-                                                     ALPHA_PIXEL_REPLACE_THRESHOLD, // alpha_threshold (values at or below this are replaced)
-                                                     ALPHA_PIXEL_REPLACE_VALUE);    // alpha value to use when replacing, typically 0, fully transparent
+            buffer_remove_partial_alpha((guchar *) p_scaled_output->p_scaledbuf,
+                                         p_scaled_output->size_bytes,
+                                         p_scaled_output->bpp,
+                                         dialog_settings.remove_semi_transparent_threshold, // alpha_threshold (values at or below this are replaced)
+                                         ALPHA_PIXEL_REPLACE_VALUE_BELOW, // alpha value for below threshold, typically 0: fully transparent
+                                         ALPHA_PIXEL_REPLACE_VALUE_ABOVE); // alpha value for above threshold, typically 255: fully opaque
         }
 
     }
