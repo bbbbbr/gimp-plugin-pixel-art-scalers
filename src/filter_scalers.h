@@ -72,8 +72,8 @@
         glong      size_bytes; // scaledbuf_size;
         gboolean   valid_image;
 
-        uint32_t * p_scaledbuf;
-    } scaled_output_info;
+        uint32_t * p_imagebuf;
+    } image_info;
 
     const char * scaler_name_get(gint);
     gint scaler_scale_factor_get(gint);
@@ -81,7 +81,7 @@
     void scaler_mode_set(gint);
     gint scaler_mode_get(void);
 
-    scaled_output_info * scaled_info_get(void);
+    image_info * scaled_info_get(void);
 
     void scalers_init(void);
     void pixel_art_scalers_release_resources(void);
@@ -91,7 +91,7 @@
     gint scaled_output_check_reapply_scalers(gint, gint, gint);
     void scaled_output_check_reallocate(gint, gint, gint);
 
-    void scaled_output_init(void);
+    void image_info_init(image_info *);
     void buffer_add_alpha_byte(guchar *, glong);
     void buffer_remove_alpha_byte(guchar *, glong);
 

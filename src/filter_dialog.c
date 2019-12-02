@@ -295,7 +295,7 @@ void dialog_settings_get(PluginPixelArtScalerVals * p_plugin_config_vals) {
 //
 gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event, GtkWidget *window)
 {
-    scaled_output_info * p_scaled_output;
+    image_info * p_scaled_output;
 
     p_scaled_output = scaled_info_get();
 
@@ -303,14 +303,14 @@ gboolean preview_scaled_size_allocate_event(GtkWidget * widget, GdkEvent *event,
       return 1; // Exit, failed
 
     // Redraw the scaled preview if it's available
-    if ( (p_scaled_output->p_scaledbuf != NULL) &&
+    if ( (p_scaled_output->p_imagebuf != NULL) &&
          (p_scaled_output->valid_image == TRUE) ) {
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (widget),  // Calling widget should be preview_scaled
                                 0, 0,
                                 p_scaled_output->width,
                                 p_scaled_output->height,
                                 GIMP_RGBA_IMAGE,
-                                (guchar *) p_scaled_output->p_scaledbuf,
+                                (guchar *) p_scaled_output->p_imagebuf,
                                 p_scaled_output->width * BYTE_SIZE_RGBA_4BPP);
     }
 
@@ -431,13 +431,13 @@ static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint 
 void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 {
     GimpPixelRgn src_rgn;
-    gint         bpp;
-    gint         width, height;
     gint         x, y;
     guint        scale_factor;
-    uint32_t   * p_srcbuf = NULL;
-    glong        srcbuf_size = 0;
-    scaled_output_info * p_scaled_output;
+    image_info   source_image;
+    image_info * p_scaled_output;
+
+    image_info_init(&source_image);
+
 
     p_scaled_output = scaled_info_get();
     scale_factor = scaler_scale_factor_get( scaler_mode_get() );
@@ -445,21 +445,23 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
         gimp_preview_get_position (preview, &x, &y);
-        gimp_preview_get_size (preview, &width, &height);
+        gimp_preview_get_size (preview, &source_image.width, &source_image.height);
 
-        dialog_scaled_preview_check_resize( preview_scaled, width, height, scale_factor);
+        dialog_scaled_preview_check_resize( preview_scaled,
+                                            source_image.width, source_image.height,
+                                            scale_factor);
     }
     else if (! gimp_drawable_mask_intersect (drawable->drawable_id,
-                                             &x, &y, &width, &height)) {
+                                             &x, &y, &source_image.width, &source_image.height)) {
         return;
     }
 
 
     // Get bit depth and alpha mask status
-    bpp = drawable->bpp;
+    source_image.bpp = drawable->bpp;
 
     // Allocate output buffer for upscaled image
-    scaled_output_check_reallocate(scale_factor, width, height);
+    scaled_output_check_reallocate(scale_factor, source_image.width, source_image.height);
 
 
     if (scaled_output_check_reapply_scalers(scaler_mode_get(), x, y)) {
@@ -468,8 +470,8 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 
         // Allocate a working buffer to copy the source image into - always RGBA 4BPP
         // 32 bit to ensure alignment, divide size since it's in BYTES
-        srcbuf_size = width * height * BYTE_SIZE_RGBA_4BPP;
-        p_srcbuf = (uint32_t *) g_new (guint32, srcbuf_size / BYTE_SIZE_RGBA_4BPP);
+        source_image.size_bytes = source_image.width * source_image.height * BYTE_SIZE_RGBA_4BPP;
+        source_image.p_imagebuf = (uint32_t *) g_new (guint32, source_image.size_bytes / BYTE_SIZE_RGBA_4BPP);
 
 
         // FALSE, FALSE : region will be used to read the actual drawable datas
@@ -477,43 +479,43 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
         gimp_pixel_rgn_init (&src_rgn,
                              drawable,
                              x, y,
-                             width, height,
+                             source_image.width, source_image.height,
                              FALSE, FALSE);
 
         // Copy source image to working buffer
         gimp_pixel_rgn_get_rect (&src_rgn,
-                                 (guchar *) p_srcbuf,
-                                 x, y, width, height);
+                                 (guchar *) source_image.p_imagebuf,
+                                 x, y, source_image.width, source_image.height);
 
         // Add alpha channel byte to source buffer if needed (scalers expect 4BPP RGBA)
-        if (bpp == BYTE_SIZE_RGB_3BPP)  // i.e. !has_alpha
-            buffer_add_alpha_byte((guchar *) p_srcbuf, srcbuf_size);
+        if (source_image.bpp == BYTE_SIZE_RGB_3BPP)  // i.e. !has_alpha
+            buffer_add_alpha_byte((guchar *) source_image.p_imagebuf, source_image.size_bytes);
 
 
         if (dialog_settings.suppress_hidden_pixel_colors) {
             // Suppress hidden colors for INPUT pixels with alpha set to non-visible
             // Those colors can often be for pixels that the creating tool
             // "deleted" by making them non-visible (alpha = 0, etc)
-            buffer_set_alpha_hidden_to_adjacent_visible((guchar *) p_srcbuf,
-                                                       srcbuf_size,
+            buffer_set_alpha_hidden_to_adjacent_visible((guchar *) source_image.p_imagebuf,
+                                                       source_image.size_bytes,
                                                        BYTE_SIZE_RGBA_4BPP, // Input image should already be forced to 4bpp RGBA
-                                                       width, height,
+                                                       source_image.width, source_image.height,
                                                        dialog_settings.suppress_hidden_pixel_colors_threshold); // Don't use colors at or below this threshold
         }
 
 
         // ====== APPLY THE SCALER ======
 
-        // Expects 4BPP RGBA in p_srcbuf, outputs same to p_scaledbuf
+        // Expects 4BPP RGBA in source_image.p_imagebuf, outputs same to scaled_output->p_imagebuf
         scaler_apply(scaler_mode_get(),
-                     p_srcbuf,
-                     p_scaled_output->p_scaledbuf,
-                     (int) width, (int) height);
+                     source_image.p_imagebuf,
+                     p_scaled_output->p_imagebuf,
+                     (int) source_image.width, (int) source_image.height);
 
 
         if (dialog_settings.remove_semi_transparent) {
             // This will force partially transparent OUTPUT pixels to solid
-            buffer_remove_partial_alpha((guchar *) p_scaled_output->p_scaledbuf,
+            buffer_remove_partial_alpha((guchar *) p_scaled_output->p_imagebuf,
                                          p_scaled_output->size_bytes,
                                          p_scaled_output->bpp,
                                          dialog_settings.remove_semi_transparent_threshold, // alpha_threshold (values at or below this are replaced)
@@ -532,26 +534,26 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
                                 p_scaled_output->width,
                                 p_scaled_output->height,
                                 GIMP_RGBA_IMAGE,
-                                (guchar *) p_scaled_output->p_scaledbuf,
+                                (guchar *) p_scaled_output->p_imagebuf,
                                 p_scaled_output->width * BYTE_SIZE_RGBA_4BPP);
     }
     else
     {
         // Remove the alpha byte from the scaled output if the source image was 3BPP RGB
-        if ((bpp == BYTE_SIZE_RGB_3BPP) & (p_scaled_output->bpp != BYTE_SIZE_RGB_3BPP)) { // i.e. !has_alpha
-            buffer_remove_alpha_byte((guchar *) p_scaled_output->p_scaledbuf, p_scaled_output->size_bytes);
+        if ((source_image.bpp == BYTE_SIZE_RGB_3BPP) & (p_scaled_output->bpp != BYTE_SIZE_RGB_3BPP)) { // i.e. !has_alpha
+            buffer_remove_alpha_byte((guchar *) p_scaled_output->p_imagebuf, p_scaled_output->size_bytes);
             p_scaled_output->bpp = BYTE_SIZE_RGB_3BPP;
         }
 
         // Apply image result with full resize
         resize_image_and_apply_changes(drawable,
-                                       (guchar *) p_scaled_output->p_scaledbuf,
+                                       (guchar *) p_scaled_output->p_imagebuf,
                                        p_scaled_output->scale_factor);
     }
 
     // Free the working buffer
-    if (p_srcbuf)
-      g_free (p_srcbuf);
+    if (source_image.p_imagebuf)
+      g_free (source_image.p_imagebuf);
 }
 
 
@@ -569,7 +571,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 // * guchar * buffer       : the previously rendered scaled output
 // * guint    scale_factor : image scale multiplier
 //
-void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbuf, guint scale_factor)
+void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_imagebuf, guint scale_factor)
 {
     GimpPixelRgn  dest_rgn;
     gint          x,y, width, height;
@@ -611,7 +613,7 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_scaledbu
         // Copy the previously rendered scaled output buffer
         // to the shadow image buffer in the drawable
         gimp_pixel_rgn_set_rect (&dest_rgn,
-                                 (guchar *) p_scaledbuf,
+                                 (guchar *) p_imagebuf,
                                  0,0,
                                  width * scale_factor,
                                  height * scale_factor);

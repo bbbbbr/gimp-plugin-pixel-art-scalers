@@ -21,7 +21,7 @@
 
 static scaler_info scalers[SCALER_ENUM_LAST];
 
-static scaled_output_info scaled_output;
+static image_info scaled_output;
 static gint scaler_mode;
 
 
@@ -73,13 +73,13 @@ gint scaler_mode_get(void) {
 
 // scaled_info_get
 //
-// Returns structure (type scaled_output_info)
+// Returns structure (type image_info)
 // with details about the current rendered
 // output image (scale mode, width, height, factor, etc)
 //
 // Used to assist with output caching
 //
-scaled_output_info * scaled_info_get(void) {
+image_info * scaled_info_get(void) {
     return &scaled_output;
 }
 
@@ -125,7 +125,7 @@ void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint 
     if ((scale_factor_new != scaled_output.scale_factor) ||
         ((width_new  * scale_factor_new) != scaled_output.width) ||
         ((height_new * scale_factor_new) != scaled_output.height) ||
-        (scaled_output.p_scaledbuf == NULL)) {
+        (scaled_output.p_imagebuf == NULL)) {
 
         // Update the buffer size and re-allocate. The x uint32_t is for RGBA buffer size
         scaled_output.width        = width_new  * scale_factor_new;
@@ -133,11 +133,11 @@ void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint 
         scaled_output.scale_factor = scale_factor_new;
         scaled_output.size_bytes = scaled_output.width * scaled_output.height * BYTE_SIZE_RGBA_4BPP;
 
-        if (scaled_output.p_scaledbuf)
-            g_free(scaled_output.p_scaledbuf);
+        if (scaled_output.p_imagebuf)
+            g_free(scaled_output.p_imagebuf);
 
         // 32 bit to ensure alignment, divide size since it's in BYTES
-        scaled_output.p_scaledbuf = (uint32_t *) g_new (guint32, scaled_output.size_bytes / BYTE_SIZE_RGBA_4BPP);
+        scaled_output.p_imagebuf = (uint32_t *) g_new (guint32, scaled_output.size_bytes / BYTE_SIZE_RGBA_4BPP);
 
         // Invalidate the image
         scaled_output.valid_image = FALSE;
@@ -149,18 +149,18 @@ void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint 
 //
 // Initialize rendered output shared structure
 //
-void scaled_output_init(void)
+void image_info_init(image_info * p_image_info)
 {
-      scaled_output.p_scaledbuf  = NULL;
-      scaled_output.width        = 0;
-      scaled_output.height       = 0;
-      scaled_output.x            = 0;
-      scaled_output.y            = 0;
-      scaled_output.scale_factor = 0;
-      scaled_output.scaler_mode  = 0;
-      scaled_output.size_bytes   = 0;
-      scaled_output.bpp          = 0;
-      scaled_output.valid_image  = FALSE;
+      p_image_info->p_imagebuf  = NULL;
+      p_image_info->width        = 0;
+      p_image_info->height       = 0;
+      p_image_info->x            = 0;
+      p_image_info->y            = 0;
+      p_image_info->scale_factor = 0;
+      p_image_info->scaler_mode  = 0;
+      p_image_info->size_bytes   = 0;
+      p_image_info->bpp          = 0;
+      p_image_info->valid_image  = FALSE;
 }
 
 
@@ -368,8 +368,8 @@ void buffer_set_alpha_hidden_to_adjacent_visible(guchar * p_buf, glong buf_size,
 //
 void pixel_art_scalers_release_resources(void) {
 
-  if (scaled_output.p_scaledbuf)
-      g_free(scaled_output.p_scaledbuf);
+  if (scaled_output.p_imagebuf)
+      g_free(scaled_output.p_imagebuf);
 }
 
 
@@ -383,7 +383,7 @@ void scalers_init(void) {
     // Init HQX scaler library
     hqxInit();
     xbr_init_data();
-    scaled_output_init();
+    image_info_init(&scaled_output);
 
     // HQX
     scalers[SCALER_2X_HQX].scaler_function = &hq2x_32;
