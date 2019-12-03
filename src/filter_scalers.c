@@ -122,10 +122,16 @@ gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint 
 //
 void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint height_new)
 {
+printf("scaled_output_check_reallocate: %d x %d -> %d x %d\n", scaled_output.width, scaled_output.height,
+    width_new  * scale_factor_new,
+    height_new * scale_factor_new
+    );
+
     if ((scale_factor_new != scaled_output.scale_factor) ||
         ((width_new  * scale_factor_new) != scaled_output.width) ||
         ((height_new * scale_factor_new) != scaled_output.height) ||
         (scaled_output.p_imagebuf == NULL)) {
+        printf("New Scaled Size\n");
 
         // Update the buffer size and re-allocate. The x uint32_t is for RGBA buffer size
         scaled_output.width        = width_new  * scale_factor_new;
@@ -189,7 +195,6 @@ void scaler_apply(int scaler_mode, uint32_t * p_srcbuf, uint32_t * p_destbuf, in
 }
 
 
-
 // buffer_add_alpha_byte
 //
 // Utility function to convert 3BPP RGB to 4BPP RGBA
@@ -245,6 +250,145 @@ void buffer_remove_alpha_byte(guchar * p_srcbuf, glong srcbuf_size) {
 }
 
 
+// Expands an image by N pixels on all edges
+//
+//
+// Used for image border features (empty border, seamless tile assist)
+//
+// Typically operates on INPUT image
+//
+// NOTE: Expects 4bpp image, will abort if not
+//
+image_info buffer_grow_image_border (image_info * p_src_image, gint grow_size) {
+
+    image_info new_image;
+    glong      src_rowstride, new_rowstride;
+    glong      c, y;
+    uint32_t * p_pix;
+    uint32_t * new_image_buf;
+
+
+    // Require 4bpp (RGBA)
+    if (p_src_image == NULL) return *p_src_image;
+    if (p_src_image->bpp != BYTE_SIZE_RGBA_4BPP) return *p_src_image;
+
+    // Copy source image data to new image structure
+    new_image = *p_src_image;
+
+    // Update size by adding growth size to top/bottom/left/right
+    // Then calculate new buffer size
+    new_image.width  += (grow_size * 2);
+    new_image.height += (grow_size * 2);
+    new_image.size_bytes = new_image.width * new_image.height * new_image.bpp;
+
+    // 32 bit to ensure alignment, divide size since it's in BYTES
+    new_image.p_imagebuf = (uint32_t *) g_new (guint32, new_image.size_bytes / BYTE_SIZE_RGBA_4BPP);
+
+    // Zero out the new image buffer with Alpha= transparent, color = rgb(0,0,0), 0xFF000000
+    p_pix = new_image.p_imagebuf;
+    for(c = 0; c < new_image.size_bytes / BYTE_SIZE_RGBA_4BPP; c++) {
+        *p_pix = 0x00000000;
+        p_pix++;
+    }
+
+    // Copy the source image to the center of the new image buffer
+    src_rowstride = (p_src_image->width * p_src_image->bpp);
+
+    for (y = 0; y < p_src_image->height; y++) {
+        // Offset the destination pointer for each line by the growth size in pixels
+        // Operating on 32 bit pointer, so ignore bpp
+        memcpy(new_image.p_imagebuf    + ((y + grow_size) * new_image.width) + grow_size,
+               p_src_image->p_imagebuf + (y * p_src_image->width),
+               src_rowstride);
+    }
+
+
+    // Release source image buffer
+    if (p_src_image->p_imagebuf) {
+        g_free(p_src_image->p_imagebuf);
+        p_src_image->p_imagebuf = NULL;
+    }
+
+    // Return updated image to caller by copying
+    // new image data into source structure
+printf("Old: %d,%d,%ld,%d\n", p_src_image->width, p_src_image->height, p_src_image->size_bytes, grow_size);
+printf("New: %d,%d,%ld,%d\n", new_image.width, new_image.height, new_image.size_bytes, grow_size);
+
+    // Return updated image info and buffer
+    return new_image;
+}
+
+
+
+// Expands an image by N pixels on all edges
+//
+//
+// Used for image border features (empty border, seamless tile assist)
+//
+// Typically operates on INPUT image
+//
+// NOTE: Expects 4bpp image, will abort if not
+//
+image_info buffer_shrink_image_border (image_info * p_src_image, gint shrink_size) {
+
+    image_info new_image;
+    glong      src_rowstride, new_rowstride;
+    glong      c, y;
+    uint32_t * p_pix;
+    uint32_t * new_image_buf;
+
+
+    // Require 4bpp (RGBA)
+    if (p_src_image == NULL) return *p_src_image;
+    if (p_src_image->bpp != BYTE_SIZE_RGBA_4BPP) return *p_src_image;
+
+    // Copy source image data to new image structure
+    new_image = *p_src_image;
+
+    // Update size by adding growth size to top/bottom/left/right
+    // Then calculate new buffer size
+    new_image.width  -= (shrink_size * 2);
+    new_image.height -= (shrink_size * 2);
+    new_image.size_bytes = new_image.width * new_image.height * new_image.bpp;
+
+    // 32 bit to ensure alignment, divide size since it's in BYTES
+    new_image.p_imagebuf = (uint32_t *) g_new (guint32, new_image.size_bytes / BYTE_SIZE_RGBA_4BPP);
+
+/*
+    // Zero out the new image buffer with Alpha= transparent, color = rgb(0,0,0), 0xFF000000
+    p_pix = new_image.p_imagebuf;
+    for(c = 0; c < new_image.size_bytes / BYTE_SIZE_RGBA_4BPP; c++) {
+        *p_pix = 0x00000000;
+        p_pix++;
+    }
+*/
+    // Copy the source image to the center of the new image buffer
+    new_rowstride = (new_image.width * new_image.bpp);
+
+    for (y = 0; y < new_image.height; y++) {
+        // Offset the destination pointer for each line by the growth size in pixels
+        // Operating on 32 bit pointer, so ignore bpp
+        memcpy(new_image.p_imagebuf    + (y * new_image.width),
+               p_src_image->p_imagebuf + ((y + shrink_size) * p_src_image->width) + shrink_size,
+               new_rowstride);
+    }
+
+
+    // Release source image buffer
+    if (p_src_image->p_imagebuf) {
+        g_free(p_src_image->p_imagebuf);
+        p_src_image->p_imagebuf = NULL;
+    }
+
+    // Return updated image to caller by copying
+    // new image data into source structure
+printf("Old: %d,%d,%ld,%d\n", p_src_image->width, p_src_image->height, p_src_image->size_bytes, shrink_size);
+printf("New: %d,%d,%ld,%d\n", new_image.width, new_image.height, new_image.size_bytes, shrink_size);
+
+    // Return updated image info and buffer
+    return new_image;
+
+}
 
 // Forces partially transparent pixels below
 // a given threshold to entirely transparent.
@@ -275,6 +419,8 @@ void buffer_remove_partial_alpha(guchar * p_buf, glong buf_size, gint bpp, gucha
     }
 }
 
+
+// TODO: convert input to accept image_info * p_image
 
 // Forces partially transparent pixels below
 // a given threshold to entirely transparent.

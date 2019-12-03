@@ -28,7 +28,7 @@ extern const char PLUG_IN_PROCEDURE[];
 extern const char PLUG_IN_ROLE[];
 extern const char PLUG_IN_BINARY[];
 
-static void dialog_scaled_preview_check_resize(GtkWidget *, gint, gint, gint);
+static void dialog_scaled_preview_check_resize(GtkWidget *, gint, gint);
 static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
 
 // UI handling
@@ -254,6 +254,9 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
   gtk_widget_show (dialog);
 
+  // Flag the scaled image as needing a recalculation
+  scaled_output_invalidate();
+
   run = (gimp_dialog_run (GIMP_DIALOG (dialog)) == GTK_RESPONSE_OK);
 
 
@@ -271,7 +274,6 @@ void dialog_settings_set(PluginPixelArtScalerVals * p_plugin_config_vals) {
     // Copy plugin settings to dialog settings
     memcpy (&dialog_settings, p_plugin_config_vals, sizeof(PluginPixelArtScalerVals));
     scaler_mode_set(dialog_settings.scaler_mode);
-
 }
 
 // For calling plugin to retrieve dialog settings (to persist for next-run)
@@ -338,6 +340,9 @@ static void on_settings_scaler_combo_changed(GtkComboBox *combo, gpointer callba
         if (!(g_strcmp0(selected_string, scaler_name_get(idx))))
           scaler_mode_set(idx);
     }
+
+    // Flag the scaled image as needing a recalculation
+    scaled_output_invalidate();
 }
 
 
@@ -386,7 +391,7 @@ static void on_setting_hidden_colors_spinbutton_changed(GtkSpinButton * spinbutt
 // Called from pixel_art_scalers_run() which is used for
 // previewing and final rendering of the selected scaler mode
 //
-static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint width_new, gint height_new, gint scale_factor_new)
+static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint width_new, gint height_new)
 {
     gint width_current, height_current;
 
@@ -394,19 +399,18 @@ static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint 
     gtk_widget_get_size_request (preview_scaled, &width_current, &height_current);
 
     // Only resize if the width, height or scaling changed
-    if ( (width_current  != (width_new  * scale_factor_new)) ||
-         (height_current != (height_new * scale_factor_new)) )
+    if ( (width_current  != width_new) ||
+         (height_current != height_new) )
     {
         // Resize scaled preview area
-        gtk_widget_set_size_request (preview_scaled, width_new * scale_factor_new, height_new * scale_factor_new);
+        gtk_widget_set_size_request (preview_scaled, width_new, height_new);
 
         // when set_size_request and then draw are called repeatedly on a preview_area
         // it causes redraw glitching in the surrounding scrolled_window region
         // Calling set_max_size appears to fix this
         // (though it may be treating the symptom and not the cause of the glitching)
         gimp_preview_area_set_max_size(GIMP_PREVIEW_AREA (preview_scaled),
-                                       width_new * scale_factor_new,
-                                       height_new * scale_factor_new);
+                                       width_new, height_new);
 
     }
 }
@@ -438,32 +442,42 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 
     image_info_init(&source_image);
 
+printf("--------INIT STAGE--------\n");
 
+printf("scaled_info_get\n");
     p_scaled_output = scaled_info_get();
     scale_factor = scaler_scale_factor_get( scaler_mode_get() );
+
+#define TEST_GROW_PX_BORDER 0
+#define TEST_GROW_PX_BORDER_TOTAL  TEST_GROW_PX_BORDER * 2
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
         gimp_preview_get_position (preview, &x, &y);
         gimp_preview_get_size (preview, &source_image.width, &source_image.height);
 
-        dialog_scaled_preview_check_resize( preview_scaled,
-                                            source_image.width, source_image.height,
-                                            scale_factor);
+// // TODO: FIXME: move this to after image border grow?
+// printf("dialog_scaled_preview_check_resize\n");
+//         dialog_scaled_preview_check_resize( preview_scaled,
+//                                             source_image.width + TEST_GROW_PX_BORDER_TOTAL, source_image.height + TEST_GROW_PX_BORDER_TOTAL,
+//                                             scale_factor);
     }
     else if (! gimp_drawable_mask_intersect (drawable->drawable_id,
                                              &x, &y, &source_image.width, &source_image.height)) {
         return;
     }
 
-
     // Get bit depth and alpha mask status
     source_image.bpp = drawable->bpp;
 
-    // Allocate output buffer for upscaled image
-    scaled_output_check_reallocate(scale_factor, source_image.width, source_image.height);
+// // TODO FIXME: move this to after image border grow?
+// printf("scaled_output_check_reallocate\n");
+//     // Allocate output buffer for upscaled image
+//     scaled_output_check_reallocate(scale_factor, source_image.width + TEST_GROW_PX_BORDER_TOTAL, source_image.height + TEST_GROW_PX_BORDER_TOTAL);
 
+printf("--------PROCESSING STAGE--------\n");
 
+printf("scaled_output_check_reapply_scalers\n");
     if (scaled_output_check_reapply_scalers(scaler_mode_get(), x, y)) {
 
         // ====== GET THE SOURCE IMAGE ======
@@ -474,6 +488,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
         source_image.p_imagebuf = (uint32_t *) g_new (guint32, source_image.size_bytes / BYTE_SIZE_RGBA_4BPP);
 
 
+printf("gimp_pixel_rgn_init\n");
         // FALSE, FALSE : region will be used to read the actual drawable datas
         // Initialize source pixel region with drawable
         gimp_pixel_rgn_init (&src_rgn,
@@ -482,20 +497,31 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
                              source_image.width, source_image.height,
                              FALSE, FALSE);
 
+printf("gimp_pixel_rgn_get_rect\n");
         // Copy source image to working buffer
         gimp_pixel_rgn_get_rect (&src_rgn,
                                  (guchar *) source_image.p_imagebuf,
                                  x, y, source_image.width, source_image.height);
 
+printf("buffer_add_alpha_byte\n");
         // Add alpha channel byte to source buffer if needed (scalers expect 4BPP RGBA)
         if (source_image.bpp == BYTE_SIZE_RGB_3BPP)  // i.e. !has_alpha
             buffer_add_alpha_byte((guchar *) source_image.p_imagebuf, source_image.size_bytes);
+// TODO ------------- FIX ME -> Upgrade source_image.bpp here to 4bpp
+
+
+printf("buffer_grow_image_border\n");
+// THIS WILL ALTER IMAGE SIZE AND RETURN A NEW BUFFER
+// TODO FIXME: The size change needs to occur **before ** scaled_output_check_reallocate
+//             But the buffer copy seems to need(???) to happen AFTER scaled_output_check_reallocate
+source_image = buffer_grow_image_border(&source_image, TEST_GROW_PX_BORDER);
 
 
         if (dialog_settings.suppress_hidden_pixel_colors) {
             // Suppress hidden colors for INPUT pixels with alpha set to non-visible
             // Those colors can often be for pixels that the creating tool
             // "deleted" by making them non-visible (alpha = 0, etc)
+printf("buffer_set_alpha_hidden_to_adjacent_visible\n");
             buffer_set_alpha_hidden_to_adjacent_visible((guchar *) source_image.p_imagebuf,
                                                        source_image.size_bytes,
                                                        BYTE_SIZE_RGBA_4BPP, // Input image should already be forced to 4bpp RGBA
@@ -506,6 +532,12 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 
         // ====== APPLY THE SCALER ======
 
+// TODO FIXME: move this to after image border grow?
+printf("scaled_output_check_reallocate\n");
+    // Allocate output buffer for upscaled image
+    scaled_output_check_reallocate(scale_factor, source_image.width, source_image.height);
+
+printf("scaler_apply\n");
         // Expects 4BPP RGBA in source_image.p_imagebuf, outputs same to scaled_output->p_imagebuf
         scaler_apply(scaler_mode_get(),
                      source_image.p_imagebuf,
@@ -514,6 +546,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 
 
         if (dialog_settings.remove_semi_transparent) {
+printf("buffer_remove_partial_alpha\n");
             // This will force partially transparent OUTPUT pixels to solid
             buffer_remove_partial_alpha((guchar *) p_scaled_output->p_imagebuf,
                                          p_scaled_output->size_bytes,
@@ -523,10 +556,19 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
                                          ALPHA_PIXEL_REPLACE_VALUE_ABOVE); // alpha value for above threshold, typically 255: fully opaque
         }
 
+printf("buffer_shrink_image_border\n");
+*p_scaled_output = buffer_shrink_image_border(p_scaled_output, TEST_GROW_PX_BORDER * scale_factor);
+
     }
+printf("--------RENDER STAGE--------\n");
     // Filter is done, apply the update
     if (preview) {
 
+printf("dialog_scaled_preview_check_resize\n");
+        dialog_scaled_preview_check_resize( preview_scaled,
+                                            p_scaled_output->width, p_scaled_output->height);
+
+printf("gimp_preview_area_draw\n");
         // Draw scaled image onto preview area
         // Expects 4BPP RGBA
         gimp_preview_area_draw (GIMP_PREVIEW_AREA (preview_scaled),
@@ -539,6 +581,8 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     }
     else
     {
+// TODO ---------------           FIX ME - Store source_image.bpp into source_original_bpp for this test!
+
         // Remove the alpha byte from the scaled output if the source image was 3BPP RGB
         if ((source_image.bpp == BYTE_SIZE_RGB_3BPP) & (p_scaled_output->bpp != BYTE_SIZE_RGB_3BPP)) { // i.e. !has_alpha
             buffer_remove_alpha_byte((guchar *) p_scaled_output->p_imagebuf, p_scaled_output->size_bytes);
@@ -551,9 +595,13 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
                                        p_scaled_output->scale_factor);
     }
 
+printf("// Free the working buffer\n");
     // Free the working buffer
-    if (source_image.p_imagebuf)
+    if (source_image.p_imagebuf) {
       g_free (source_image.p_imagebuf);
+      source_image.p_imagebuf = NULL;
+  }
+printf("\n\n\n");
 }
 
 
