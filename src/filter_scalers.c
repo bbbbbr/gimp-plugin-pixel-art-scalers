@@ -122,16 +122,10 @@ gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint 
 //
 void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint height_new)
 {
-printf("scaled_output_check_reallocate: %d x %d -> %d x %d\n", scaled_output.width, scaled_output.height,
-    width_new  * scale_factor_new,
-    height_new * scale_factor_new
-    );
-
     if ((scale_factor_new != scaled_output.scale_factor) ||
         ((width_new  * scale_factor_new) != scaled_output.width) ||
         ((height_new * scale_factor_new) != scaled_output.height) ||
         (scaled_output.p_imagebuf == NULL)) {
-        printf("New Scaled Size\n");
 
         // Update the buffer size and re-allocate. The x uint32_t is for RGBA buffer size
         scaled_output.width        = width_new  * scale_factor_new;
@@ -311,8 +305,8 @@ image_info buffer_grow_image_border (image_info * p_src_image, gint grow_size) {
 
     // Return updated image to caller by copying
     // new image data into source structure
-printf("Old: %d,%d,%ld,%d\n", p_src_image->width, p_src_image->height, p_src_image->size_bytes, grow_size);
-printf("New: %d,%d,%ld,%d\n", new_image.width, new_image.height, new_image.size_bytes, grow_size);
+    printf("Old: %d,%d,%ld,%d\n", p_src_image->width, p_src_image->height, p_src_image->size_bytes, grow_size);
+    printf("New: %d,%d,%ld,%d\n", new_image.width, new_image.height, new_image.size_bytes, grow_size);
 
     // Return updated image info and buffer
     return new_image;
@@ -382,8 +376,8 @@ image_info buffer_shrink_image_border (image_info * p_src_image, gint shrink_siz
 
     // Return updated image to caller by copying
     // new image data into source structure
-printf("Old: %d,%d,%ld,%d\n", p_src_image->width, p_src_image->height, p_src_image->size_bytes, shrink_size);
-printf("New: %d,%d,%ld,%d\n", new_image.width, new_image.height, new_image.size_bytes, shrink_size);
+    printf("Old: %d,%d,%ld,%d\n", p_src_image->width, p_src_image->height, p_src_image->size_bytes, shrink_size);
+    printf("New: %d,%d,%ld,%d\n", new_image.width, new_image.height, new_image.size_bytes, shrink_size);
 
     // Return updated image info and buffer
     return new_image;
