@@ -30,7 +30,7 @@ extern const char PLUG_IN_ROLE[];
 extern const char PLUG_IN_BINARY[];
 
 static void dialog_scaled_preview_check_resize(GtkWidget *, gint, gint);
-static void resize_image_and_apply_changes(GimpDrawable *, guchar *, guint);
+static void resize_image_and_apply_changes(GimpDrawable *, image_info * p_scaled_output);
 
 // UI handling
 static void on_settings_scaler_combo_changed (GtkComboBox *, gpointer);
@@ -565,8 +565,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 
         // Apply image result with full resize
         resize_image_and_apply_changes(drawable,
-                                       (guchar *) p_scaled_output->p_imagebuf,
-                                       p_scaled_output->scale_factor);
+                                       p_scaled_output);
     }
 
     // Free the working buffer
@@ -591,7 +590,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 // * guchar * buffer       : the previously rendered scaled output
 // * guint    scale_factor : image scale multiplier
 //
-void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_imagebuf, guint scale_factor)
+void resize_image_and_apply_changes(GimpDrawable * drawable, image_info * p_scaled_output)
 {
     GimpPixelRgn  dest_rgn;
     gint          x,y, width, height;
@@ -606,8 +605,8 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_imagebuf
 
     // Resize source image
     if (gimp_image_resize(gimp_item_get_image(drawable->drawable_id),
-                          width * scale_factor,
-                          height * scale_factor,
+                          p_scaled_output->width,
+                          p_scaled_output->height,
                           0,0))
     {
 
@@ -626,23 +625,23 @@ void resize_image_and_apply_changes(GimpDrawable * drawable, guchar * p_imagebuf
         gimp_pixel_rgn_init (&dest_rgn,
                              resized_drawable,
                              0, 0,
-                             width * scale_factor,
-                             height * scale_factor,
+                             p_scaled_output->width,
+                             p_scaled_output->height,
                              TRUE, TRUE);
 
         // Copy the previously rendered scaled output buffer
         // to the shadow image buffer in the drawable
         gimp_pixel_rgn_set_rect (&dest_rgn,
-                                 (guchar *) p_imagebuf,
+                                 (guchar *) p_scaled_output->p_imagebuf,
                                  0,0,
-                                 width * scale_factor,
-                                 height * scale_factor);
+                                 p_scaled_output->width,
+                                 p_scaled_output->height);
 
 
         // Apply the changes to the image (merge shadow, update drawable)
         gimp_drawable_flush (resized_drawable);
         gimp_drawable_merge_shadow (resized_drawable->drawable_id, TRUE);
-        gimp_drawable_update (resized_drawable->drawable_id, 0, 0, width * scale_factor, height * scale_factor);
+        gimp_drawable_update (resized_drawable->drawable_id, 0, 0, p_scaled_output->width, p_scaled_output->height);
 
         // Free the extra resized drawable
         gimp_drawable_detach (resized_drawable);
