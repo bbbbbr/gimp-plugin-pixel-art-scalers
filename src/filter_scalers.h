@@ -30,6 +30,12 @@
 
     #define HIDDEN_PIXEL_ALPHA_THRESHOLD_DEFAULT   32 // 0 works in many cases. Don't use colors at or below this threshold
 
+    #define BORDER_GROW_NONE    0
+    #define BORDER_GROW_DEFAULT 2
+
+    #define BORDER_TILE_NO    0
+    #define BORDER_TILE_YES   1
+
 
     // List of available scalers
     // Order here controls order in dialog drop-down selector
@@ -75,6 +81,14 @@
         uint32_t * p_imagebuf;
     } image_info;
 
+
+    typedef struct {
+        guchar  border_x;
+        guchar  border_y;
+        guchar  tile_horiz;
+        guchar  tile_vert;
+    } border_info;
+
     const char * scaler_name_get(gint);
     gint scaler_scale_factor_get(gint);
 
@@ -92,13 +106,5 @@
     void scaled_output_check_reallocate(gint, gint, gint);
 
     void image_info_init(image_info *);
-    void buffer_add_alpha_byte(guchar *, glong);
-    void buffer_remove_alpha_byte(guchar *, glong);
-
-    image_info buffer_grow_image_border (image_info *, gint);
-    image_info buffer_shrink_image_border (image_info *, gint);
-
-    void buffer_remove_partial_alpha(guchar *, glong, gint, guchar, guchar, guchar);
-    void buffer_set_alpha_hidden_to_adjacent_visible(guchar *, glong, gint, gint, gint, guchar); //, guchar);
 
 #endif

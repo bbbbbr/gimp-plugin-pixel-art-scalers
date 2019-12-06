@@ -441,13 +441,26 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     guint        scale_factor;
     image_info   source_image;
     image_info * p_scaled_output;
+    border_info  border_options;
 
     image_info_init(&source_image);
     p_scaled_output = scaled_info_get();
     scale_factor = scaler_scale_factor_get( scaler_mode_get() );
 
-#define TEST_GROW_PX_BORDER 2
-#define TEST_GROW_PX_BORDER_TOTAL  TEST_GROW_PX_BORDER * 2
+
+   // border_info border_defaults =  {BORDER_GROW_NONE, BORDER_GROW_NONE,
+   //                                 BORDER_TILE_NO, BORDER_TILE_NO};
+
+   // border_info border_defaults =  {BORDER_GROW_DEFAULT, BORDER_GROW_NONE,
+   //                                 BORDER_TILE_YES, BORDER_TILE_NO};
+
+   // border_info border_defaults =  {BORDER_GROW_NONE, BORDER_GROW_DEFAULT,
+   //                                 BORDER_TILE_NO, BORDER_TILE_YES};
+
+    border_info border_defaults =  {BORDER_GROW_DEFAULT, BORDER_GROW_DEFAULT,
+                                    BORDER_TILE_YES, BORDER_TILE_YES};
+
+    border_options = border_defaults;
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
@@ -491,14 +504,21 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
             source_image.bpp = BYTE_SIZE_RGBA_4BPP;   // Note: original_bpp retains value for actual image
         }
 
-        // Alters image size and returns a new re-allocated buffer
-        // The re-size has to occur *before* scaled_output_check_reallocate
-        source_image = buffer_grow_image_border(&source_image, TEST_GROW_PX_BORDER);
+        // Add a border around the image if needed (empty padding or for tiled copies)
+        if ((border_options.border_x > 0) || (border_options.border_y > 0)) {
+            // Alters image size and returns a new re-allocated buffer
+            // The re-size has to occur *before* scaled_output_check_reallocate
+            source_image = buffer_grow_image_border(&source_image, border_options.border_x, border_options.border_y);
 
-        printf("buffer_tiled_edge_copy: %d\n", source_image.bpp);
-        buffer_tiled_edge_copy (&source_image,
-                                TEST_GROW_PX_BORDER, TEST_GROW_PX_BORDER, // border w, border h
-                                TRUE, TRUE); // tile x?, tile y?
+
+            // Assist Seamless Tile scaling by adding tiled copies of
+            // image to artificial border area created above
+            if ((border_options.tile_horiz) || (border_options.tile_vert)) {
+                buffer_tiled_edge_copy (&source_image,
+                                        border_options.border_x, border_options.border_y,
+                                        border_options.tile_horiz, border_options.tile_vert);
+            }
+        }
 
         if (dialog_settings.suppress_hidden_pixel_colors) {
             // Suppress hidden colors for INPUT pixels with alpha set to non-visible
@@ -534,8 +554,14 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
                                          ALPHA_PIXEL_REPLACE_VALUE_ABOVE); // alpha value for above threshold, typically 255: fully opaque
         }
 
-        printf("buffer_shrink_image_border\n");
-        *p_scaled_output = buffer_shrink_image_border(p_scaled_output, TEST_GROW_PX_BORDER * scale_factor);
+        // Removes a previously added border around the image (see buffer_grow_image_border)
+        // This allows the scaled output to return to the expected multiple size of the source image
+        if ((border_options.border_x > 0) || (border_options.border_y > 0)) {
+            printf("buffer_shrink_image_border\n");
+            *p_scaled_output = buffer_shrink_image_border(p_scaled_output,
+                                                          border_options.border_x * scale_factor,
+                                                          border_options.border_y * scale_factor);
+        }
 
     }
 
