@@ -21,6 +21,7 @@
 #include "filter_pixel_art_scalers.h"
 #include "filter_dialog.h"
 #include "filter_scalers.h"
+#include "filter_utils.h"
 
 
 
@@ -445,7 +446,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     p_scaled_output = scaled_info_get();
     scale_factor = scaler_scale_factor_get( scaler_mode_get() );
 
-#define TEST_GROW_PX_BORDER 0
+#define TEST_GROW_PX_BORDER 2
 #define TEST_GROW_PX_BORDER_TOTAL  TEST_GROW_PX_BORDER * 2
 
     // Get the working image area for either the preview sub-window or the entire image
@@ -494,6 +495,10 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
         // The re-size has to occur *before* scaled_output_check_reallocate
         source_image = buffer_grow_image_border(&source_image, TEST_GROW_PX_BORDER);
 
+        printf("buffer_tiled_edge_copy: %d\n", source_image.bpp);
+        buffer_tiled_edge_copy (&source_image,
+                                TEST_GROW_PX_BORDER, TEST_GROW_PX_BORDER, // border w, border h
+                                TRUE, TRUE); // tile x?, tile y?
 
         if (dialog_settings.suppress_hidden_pixel_colors) {
             // Suppress hidden colors for INPUT pixels with alpha set to non-visible
