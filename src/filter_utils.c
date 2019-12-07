@@ -235,11 +235,6 @@ image_info buffer_grow_image_border (image_info * p_src_image, gint grow_x, gint
         p_src_image->p_imagebuf = NULL;
     }
 
-    // Return updated image to caller by copying
-    // new image data into source structure
-    printf("Old: %d,%d - %ld - %d  %d\n", p_src_image->width, p_src_image->height, p_src_image->size_bytes, grow_x, grow_y);
-    printf("New: %d,%d - %ld - %d, %d\n", new_image.width, new_image.height, new_image.size_bytes, grow_x, grow_y);
-
     // Return updated image info and buffer
     return new_image;
 }
@@ -297,11 +292,6 @@ image_info buffer_shrink_image_border (image_info * p_src_image, gint shrink_x, 
         g_free(p_src_image->p_imagebuf);
         p_src_image->p_imagebuf = NULL;
     }
-
-    // Return updated image to caller by copying
-    // new image data into source structure
-    printf("Old: %d,%d - %ld - %d  %d\n", p_src_image->width, p_src_image->height, p_src_image->size_bytes, shrink_x, shrink_y);
-    printf("New: %d,%d - %ld - %d, %d\n", new_image.width, new_image.height, new_image.size_bytes, shrink_x, shrink_y);
 
     // Return updated image info and buffer
     return new_image;

@@ -217,43 +217,6 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
 
     // Attach the controls to the table and show them all
-/*
-    // Layout: All controls vertically stacked
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_label, 1, 2, 0, 1);
-    gtk_table_attach (GTK_TABLE (settings_table), settings_scaler_combo, 2, 3, 0, 1, GTK_FILL, GTK_FILL, 0, 0); // omit GTK_EXPAND to keep widget size smaller
-
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_border_label, 1, 2, 1, 2);
-    gtk_table_attach (GTK_TABLE (settings_table), settings_border_combo, 2, 3, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
-
-
-    align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
-    gtk_widget_show(align);
-    gtk_container_add(GTK_CONTAINER(align), settings_semi_transparency_checkbutton);
-    gtk_table_attach (GTK_TABLE (settings_table), align, 1, 2, 2, 3, GTK_FILL, GTK_FILL, 0, 0);
-
-    gtk_table_attach (GTK_TABLE (settings_table), settings_semi_transparency_spinbutton,  2, 3, 2, 3, GTK_FILL, GTK_FILL, 0, 0);
-    // align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
-    // gtk_widget_show(align);
-    // gtk_container_add(GTK_CONTAINER(align), settings_semi_transparency_spinbutton);
-    // gtk_table_attach (GTK_TABLE (settings_table), align, 2, 3, 2, 3, GTK_FILL, GTK_FILL, 0, 0);
-
-
-    align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
-    gtk_container_add(GTK_CONTAINER(align), settings_hidden_colors_checkbutton);
-    gtk_table_attach (GTK_TABLE (settings_table), align, 1, 2, 3, 4, GTK_FILL, GTK_FILL, 0, 0);
-    gtk_widget_show(align);
-
-    gtk_table_attach (GTK_TABLE (settings_table), settings_hidden_colors_spinbutton,  2, 3, 3, 4, GTK_FILL, GTK_FILL, 0, 0);
-    // align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
-    // gtk_container_add(GTK_CONTAINER(align), settings_hidden_colors_spinbutton);
-    // gtk_table_attach (GTK_TABLE (settings_table), align, 2, 3, 3, 4, GTK_FILL, GTK_FILL, 0, 0);
-    // gtk_widget_show(align);
-*/
-
-
-    // Spacing between the left and right control groups
-    //gtk_table_set_col_spacing (GTK_TABLE (settings_table), 1, 30);
-
     gtk_table_attach (GTK_TABLE (settings_table), settings_scaler_label, 2, 3, 0, 1, GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
     gtk_table_attach (GTK_TABLE (settings_table), settings_scaler_combo, 3, 4, 0, 1, GTK_FILL, GTK_FILL, 0, 0); // omit GTK_EXPAND to keep widget size smaller
 
@@ -642,7 +605,6 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
         // Removes a previously added border around the image (see buffer_grow_image_border)
         // This allows the scaled output to return to the expected multiple size of the source image
         if ((border_options.border_x > 0) || (border_options.border_y > 0)) {
-            printf("buffer_shrink_image_border\n");
             *p_scaled_output = buffer_shrink_image_border(p_scaled_output,
                                                           border_options.border_x * scale_factor,
                                                           border_options.border_y * scale_factor);
