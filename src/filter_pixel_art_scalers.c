@@ -51,7 +51,8 @@ static PluginPixelArtScalerVals plugin_config_vals =
   0,                                     // remove_semi_transparent;
   ALPHA_PIXEL_REPLACE_THRESHOLD_DEFAULT, // remove_semi_transparent_threshold;
   0,                                     // suppress_hidden_pixel_colors
-  HIDDEN_PIXEL_ALPHA_THRESHOLD_DEFAULT   // suppress_hidden_pixel_colors_threshold
+  HIDDEN_PIXEL_ALPHA_THRESHOLD_DEFAULT,  // suppress_hidden_pixel_colors_threshold
+  0,                                     // default border mode is NONE
 };
 
 
@@ -70,7 +71,8 @@ static void query(void)
         { GIMP_PDB_INT32,    "remove-semi-transparent",                 "Converts semi-transparent pixels in scaled OUTPUT image to fully transparent or opaque(0-1)" },
         { GIMP_PDB_INT32,    "remove-semi-transparent-threshold",       "Threshold for converting semi-transparency (0-254)" },
         { GIMP_PDB_INT32,    "suppress-hidden-pixel-colors",            "Suppress color from hidden pixels on INPUT image (0-1)" },
-        { GIMP_PDB_INT32,    "suppress-hidden-pixel-colors-threshold",  "Threshold for suppressing hidden pixel color (0-254)" }
+        { GIMP_PDB_INT32,    "suppress-hidden-pixel-colors-threshold",  "Threshold for suppressing hidden pixel color (0-254)" },
+        { GIMP_PDB_INT32,    "border-mode", "Border processing mode (0-N)" },
     };
 
 
@@ -141,11 +143,12 @@ static void run(const gchar      * name,
 
     case GIMP_RUN_NONINTERACTIVE:
         // Read in non-interactive mode plug settings, then apply them
-        plugin_config_vals.scaler_mode = param[3].data.d_int32;
+        plugin_config_vals.scaler_mode                       = param[3].data.d_int32;
         plugin_config_vals.remove_semi_transparent           = param[4].data.d_int32;
         plugin_config_vals.remove_semi_transparent_threshold = param[5].data.d_int32;
         plugin_config_vals.suppress_hidden_pixel_colors           = param[6].data.d_int32;
         plugin_config_vals.suppress_hidden_pixel_colors_threshold = param[7].data.d_int32;
+        plugin_config_vals.border_mode                            = param[8].data.d_int32;
         // Set settings/config in dialog
         dialog_settings_set (&plugin_config_vals);
         break;

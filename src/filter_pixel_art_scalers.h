@@ -12,6 +12,7 @@
         gint  remove_semi_transparent_threshold;
         gint  suppress_hidden_pixel_colors;
         gint  suppress_hidden_pixel_colors_threshold;
+        gint  border_mode;
     } PluginPixelArtScalerVals;
 
 

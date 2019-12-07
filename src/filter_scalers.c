@@ -22,9 +22,9 @@ static scaler_info scalers[SCALER_ENUM_LAST];
 static border_info border_types[BORDER_ENUM_LAST] =
           { {"None",      BORDER_NO,   BORDER_NO, TILE_NO, TILE_NO},
 
-            {"Empty All",   BORDER_DEF, BORDER_DEF, TILE_NO, TILE_NO},
-            {"Empty Horiz", BORDER_DEF, BORDER_NO,  TILE_NO, TILE_NO},
-            {"Empty Vert",  BORDER_NO,  BORDER_DEF, TILE_NO, TILE_NO},
+            {"Padding All",   BORDER_DEF, BORDER_DEF, TILE_NO, TILE_NO},
+            {"Padding Horiz", BORDER_DEF, BORDER_NO,  TILE_NO, TILE_NO},
+            {"Padding Vert",  BORDER_NO,  BORDER_DEF, TILE_NO, TILE_NO},
 
             {"Tile All",    BORDER_DEF, BORDER_DEF, TILE_YES, TILE_YES},
             {"Tile Horiz",  BORDER_DEF, BORDER_NO,  TILE_YES, TILE_NO },
@@ -122,6 +122,15 @@ gint border_mode_get(void) {
 //
 border_info border_options_get(void) {
     return border_types[border_mode];
+}
+
+
+// border_mode_name_get
+//
+// Returns current morder mode settings (type border_info)
+//
+const char * border_mode_name_get(gint mode) {
+    return border_types[mode].name;
 }
 
 

@@ -117,6 +117,7 @@
     void border_mode_set(gint);
     gint border_mode_get(void);
     border_info border_options_get(void);
+    const char * border_mode_name_get(gint mode);
 
     image_info * scaled_info_get(void);
 

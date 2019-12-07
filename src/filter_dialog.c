@@ -34,6 +34,7 @@ static void resize_image_and_apply_changes(GimpDrawable *, image_info * p_scaled
 
 // UI handling
 static void on_settings_scaler_combo_changed (GtkComboBox *, gpointer);
+static void on_settings_border_combo_changed (GtkComboBox *, gpointer);
 
 static void on_settings_semi_transparency_checkbutton_changed(GtkToggleButton *, gpointer);
 static void on_setting_hidden_colors_checkbutton_changed(GtkToggleButton *, gpointer);
@@ -61,8 +62,13 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   GtkWidget * scaled_preview_window;
 
   GtkWidget * settings_table;
+  GtkWidget * align;
+
   GtkWidget * settings_scaler_combo;
   GtkWidget * settings_scaler_label;
+
+  GtkWidget * settings_border_label;
+  GtkWidget * settings_border_combo;
 
   GtkWidget * settings_semi_transparency_checkbutton;
   GtkWidget * settings_hidden_colors_checkbutton;
@@ -86,7 +92,7 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
   // Resize to show more of scaled preview by default (this sets MIN size)
   gtk_widget_set_size_request (dialog,
-                               500,
+                               540,
                                400);
 
 
@@ -151,24 +157,25 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
     g_signal_connect(preview_scaled, "size-allocate", G_CALLBACK(preview_scaled_size_allocate_event), (gpointer)scaled_preview_window);
 
 
-    // Create 1 x 4 table for Settings, non-homogonous sizing, attach to main vbox
+    // Create 4 x 5 table for Settings, non-homogonous sizing, attach to main vbox
     // TODO: Consider changing from a table to a grid (tables are deprecated)
-    settings_table = gtk_table_new (1, 4, FALSE);
-    gtk_box_pack_start (GTK_BOX (main_vbox), settings_table, FALSE, FALSE, 0);
-    gtk_table_set_homogeneous(GTK_TABLE (settings_table), FALSE);
+    settings_table = gtk_table_new (4, 5, FALSE);
+        gtk_box_pack_start (GTK_BOX (main_vbox), settings_table, FALSE, FALSE, 0);
+        gtk_table_set_homogeneous(GTK_TABLE (settings_table), FALSE);
+
 
     // Create label and right-align it
     settings_scaler_label = gtk_label_new ("Scaler type:  " );
-    gtk_misc_set_alignment(GTK_MISC(settings_scaler_label), 1.0f, 0.5f);
+        gtk_misc_set_alignment(GTK_MISC(settings_scaler_label), 1.0f, 0.5f);
 
     // Add a Combo box for the SCALER MODE
     // then add entries for the scaler types and then set default
     settings_scaler_combo = gtk_combo_box_text_new ();
 
-    for (idx = SCALER_ENUM_FIRST; idx < SCALER_ENUM_LAST; idx++)
-        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(settings_scaler_combo), scaler_name_get(idx));
+        for (idx = SCALER_ENUM_FIRST; idx < SCALER_ENUM_LAST; idx++)
+            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(settings_scaler_combo), scaler_name_get(idx));
 
-    gtk_combo_box_set_active(GTK_COMBO_BOX(settings_scaler_combo), scaler_mode_get() );
+        gtk_combo_box_set_active(GTK_COMBO_BOX(settings_scaler_combo), scaler_mode_get() );
 
 
     // Transparency and alpha blending options (checkbox and value entry spin buttons)
@@ -195,16 +202,69 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
         gtk_widget_set_sensitive(settings_hidden_colors_spinbutton, dialog_settings.suppress_hidden_pixel_colors == TRUE);
 
 
-    // Attach the label and combo to the table and show them all
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_label, 2, 3, 0, 1); // Middle of table
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_combo, 3, 4, 0, 1); // Right side of table
+    // Create border label and right-align it
+    settings_border_label = gtk_label_new ("Image Border: " );
+        gtk_misc_set_alignment(GTK_MISC(settings_border_label), 1.0f, 0.5f);
 
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_semi_transparency_checkbutton, 0, 1, 0, 1); // Left side of table
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_semi_transparency_spinbutton, 1, 2, 0, 1); // Left side of table
+    // Add a Combo box for the BORDER MODE
+    // then add entries for the border types and then set default
+    settings_border_combo = gtk_combo_box_text_new ();
 
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_hidden_colors_checkbutton, 0, 1, 1, 2);     // Left side of table
-    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_hidden_colors_spinbutton, 1, 2, 1, 2);     // Left side of table
+        for (idx = BORDER_ENUM_FIRST; idx < BORDER_ENUM_LAST; idx++)
+            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(settings_border_combo), border_mode_name_get(idx));
 
+        gtk_combo_box_set_active(GTK_COMBO_BOX(settings_border_combo), border_mode_get() );
+
+
+    // Attach the controls to the table and show them all
+/*
+    // Layout: All controls vertically stacked
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_scaler_label, 1, 2, 0, 1);
+    gtk_table_attach (GTK_TABLE (settings_table), settings_scaler_combo, 2, 3, 0, 1, GTK_FILL, GTK_FILL, 0, 0); // omit GTK_EXPAND to keep widget size smaller
+
+    gtk_table_attach_defaults (GTK_TABLE (settings_table), settings_border_label, 1, 2, 1, 2);
+    gtk_table_attach (GTK_TABLE (settings_table), settings_border_combo, 2, 3, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
+
+
+    align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
+    gtk_widget_show(align);
+    gtk_container_add(GTK_CONTAINER(align), settings_semi_transparency_checkbutton);
+    gtk_table_attach (GTK_TABLE (settings_table), align, 1, 2, 2, 3, GTK_FILL, GTK_FILL, 0, 0);
+
+    gtk_table_attach (GTK_TABLE (settings_table), settings_semi_transparency_spinbutton,  2, 3, 2, 3, GTK_FILL, GTK_FILL, 0, 0);
+    // align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
+    // gtk_widget_show(align);
+    // gtk_container_add(GTK_CONTAINER(align), settings_semi_transparency_spinbutton);
+    // gtk_table_attach (GTK_TABLE (settings_table), align, 2, 3, 2, 3, GTK_FILL, GTK_FILL, 0, 0);
+
+
+    align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
+    gtk_container_add(GTK_CONTAINER(align), settings_hidden_colors_checkbutton);
+    gtk_table_attach (GTK_TABLE (settings_table), align, 1, 2, 3, 4, GTK_FILL, GTK_FILL, 0, 0);
+    gtk_widget_show(align);
+
+    gtk_table_attach (GTK_TABLE (settings_table), settings_hidden_colors_spinbutton,  2, 3, 3, 4, GTK_FILL, GTK_FILL, 0, 0);
+    // align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
+    // gtk_container_add(GTK_CONTAINER(align), settings_hidden_colors_spinbutton);
+    // gtk_table_attach (GTK_TABLE (settings_table), align, 2, 3, 3, 4, GTK_FILL, GTK_FILL, 0, 0);
+    // gtk_widget_show(align);
+*/
+
+
+    // Spacing between the left and right control groups
+    //gtk_table_set_col_spacing (GTK_TABLE (settings_table), 1, 30);
+
+    gtk_table_attach (GTK_TABLE (settings_table), settings_scaler_label, 2, 3, 0, 1, GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
+    gtk_table_attach (GTK_TABLE (settings_table), settings_scaler_combo, 3, 4, 0, 1, GTK_FILL, GTK_FILL, 0, 0); // omit GTK_EXPAND to keep widget size smaller
+
+    gtk_table_attach (GTK_TABLE (settings_table), settings_border_label, 2, 3, 1, 2, GTK_FILL | GTK_EXPAND, GTK_FILL, 0, 0);
+    gtk_table_attach (GTK_TABLE (settings_table), settings_border_combo, 3, 4, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
+
+    gtk_table_attach (GTK_TABLE (settings_table), settings_semi_transparency_checkbutton, 0, 1, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
+    gtk_table_attach (GTK_TABLE (settings_table), settings_semi_transparency_spinbutton,  1, 2, 0, 1, GTK_FILL, GTK_FILL, 0, 0);
+
+    gtk_table_attach (GTK_TABLE (settings_table), settings_hidden_colors_checkbutton, 0, 1, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
+    gtk_table_attach (GTK_TABLE (settings_table), settings_hidden_colors_spinbutton,  1, 2, 1, 2, GTK_FILL, GTK_FILL, 0, 0);
 
 
 
@@ -215,6 +275,8 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
     gtk_widget_show (settings_semi_transparency_spinbutton);
     gtk_widget_show (settings_hidden_colors_checkbutton);
     gtk_widget_show (settings_hidden_colors_spinbutton);
+    gtk_widget_show (settings_border_label);
+    gtk_widget_show (settings_border_combo);
 
 
     // Connect the changed signal to update the UI controls
@@ -222,6 +284,12 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
                       "changed",
                       G_CALLBACK (on_settings_scaler_combo_changed),
                       NULL);
+
+    g_signal_connect (settings_border_combo,
+                      "changed",
+                      G_CALLBACK (on_settings_border_combo_changed),
+                      NULL);
+
 
     g_signal_connect(G_OBJECT(settings_semi_transparency_checkbutton), "toggled",
                       G_CALLBACK(on_settings_semi_transparency_checkbutton_changed),
@@ -240,6 +308,10 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
     // Then connect a second signal to trigger a preview updates
     g_signal_connect_swapped (settings_scaler_combo, "changed",
                               G_CALLBACK (gimp_preview_invalidate), preview);
+
+    g_signal_connect_swapped (settings_border_combo, "changed",
+                              G_CALLBACK (gimp_preview_invalidate), preview);
+
 
     g_signal_connect_swapped (settings_semi_transparency_checkbutton, "toggled",
                               G_CALLBACK (gimp_preview_invalidate), preview);
@@ -275,6 +347,7 @@ void dialog_settings_set(PluginPixelArtScalerVals * p_plugin_config_vals) {
     // Copy plugin settings to dialog settings
     memcpy (&dialog_settings, p_plugin_config_vals, sizeof(PluginPixelArtScalerVals));
     scaler_mode_set(dialog_settings.scaler_mode);
+    border_mode_set(dialog_settings.border_mode);
 }
 
 // For calling plugin to retrieve dialog settings (to persist for next-run)
@@ -283,6 +356,7 @@ void dialog_settings_get(PluginPixelArtScalerVals * p_plugin_config_vals) {
 
     // Copy dialog settings to plugin settings
     dialog_settings.scaler_mode = scaler_mode_get();
+    dialog_settings.border_mode = border_mode_get();
     memcpy (p_plugin_config_vals, &dialog_settings, sizeof(PluginPixelArtScalerVals));
 }
 
@@ -340,6 +414,31 @@ static void on_settings_scaler_combo_changed(GtkComboBox *combo, gpointer callba
         // If the mode string matched the one in the combo, select it as the current mode
         if (!(g_strcmp0(selected_string, scaler_name_get(idx))))
           scaler_mode_set(idx);
+    }
+
+    // Flag the scaled image as needing a recalculation
+    scaled_output_invalidate();
+}
+
+
+// on_settings_border_combo_changed
+//
+// Handler for "changed" signal of BORDER MODE combo box
+// When the user changes the border type -> Update the border mode
+//
+//   callback_data not used currently
+//
+static void on_settings_border_combo_changed(GtkComboBox *combo, gpointer callback_data)
+{
+    gint idx;
+    gchar * selected_string;
+
+    selected_string = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(combo) );
+
+    for (idx=0; idx < SCALER_ENUM_LAST; idx++) {
+        // If the mode string matched the one in the combo, select it as the current mode
+        if (!(g_strcmp0(selected_string, border_mode_name_get(idx))))
+          border_mode_set(idx);
     }
 
     // Flag the scaled image as needing a recalculation
