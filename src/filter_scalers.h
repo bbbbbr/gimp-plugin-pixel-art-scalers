@@ -30,11 +30,11 @@
 
     #define HIDDEN_PIXEL_ALPHA_THRESHOLD_DEFAULT   32 // 0 works in many cases. Don't use colors at or below this threshold
 
-    #define BORDER_GROW_NONE    0
-    #define BORDER_GROW_DEFAULT 2
-
-    #define BORDER_TILE_NO    0
-    #define BORDER_TILE_YES   1
+    #define BORDER_STR_MAX      40
+    #define BORDER_NO    0
+    #define BORDER_DEF   2
+    #define TILE_NO      0
+    #define TILE_YES     1
 
 
     // List of available scalers
@@ -60,6 +60,23 @@
         SCALER_ENUM_LAST
     };
 
+    // List of available scalers
+    // Order here controls order in dialog drop-down selector
+    enum border_options_list {
+        BORDER_ENUM_FIRST = 0,
+
+        BORDER_NONE = BORDER_ENUM_FIRST,
+
+        BORDER_EMPTY_ALL,
+        BORDER_EMPTY_VERT,
+        BORDER_EMPTY_HORIZ,
+
+        BORDER_TILE_ALL,
+        BORDER_TILE_VERT,
+        BORDER_TILE_HORIZ,
+
+        BORDER_ENUM_LAST
+    };
 
 
     typedef struct {
@@ -83,6 +100,7 @@
 
 
     typedef struct {
+        char    name[BORDER_STR_MAX];
         guchar  border_x;
         guchar  border_y;
         guchar  tile_horiz;
@@ -94,6 +112,11 @@
 
     void scaler_mode_set(gint);
     gint scaler_mode_get(void);
+
+
+    void border_mode_set(gint);
+    gint border_mode_get(void);
+    border_info border_options_get(void);
 
     image_info * scaled_info_get(void);
 

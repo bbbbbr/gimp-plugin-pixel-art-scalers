@@ -446,21 +446,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     image_info_init(&source_image);
     p_scaled_output = scaled_info_get();
     scale_factor = scaler_scale_factor_get( scaler_mode_get() );
-
-
-   // border_info border_defaults =  {BORDER_GROW_NONE, BORDER_GROW_NONE,
-   //                                 BORDER_TILE_NO, BORDER_TILE_NO};
-
-   // border_info border_defaults =  {BORDER_GROW_DEFAULT, BORDER_GROW_NONE,
-   //                                 BORDER_TILE_YES, BORDER_TILE_NO};
-
-   // border_info border_defaults =  {BORDER_GROW_NONE, BORDER_GROW_DEFAULT,
-   //                                 BORDER_TILE_NO, BORDER_TILE_YES};
-
-    border_info border_defaults =  {BORDER_GROW_DEFAULT, BORDER_GROW_DEFAULT,
-                                    BORDER_TILE_YES, BORDER_TILE_YES};
-
-    border_options = border_defaults;
+    border_options = border_options_get();
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {

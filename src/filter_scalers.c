@@ -19,9 +19,21 @@
 #include "scaler_nearestneighbor.h"
 
 static scaler_info scalers[SCALER_ENUM_LAST];
+static border_info border_types[BORDER_ENUM_LAST] =
+          { {"None",      BORDER_NO,   BORDER_NO, TILE_NO, TILE_NO},
+
+            {"Empty All",   BORDER_DEF, BORDER_DEF, TILE_NO, TILE_NO},
+            {"Empty Horiz", BORDER_DEF, BORDER_NO,  TILE_NO, TILE_NO},
+            {"Empty Vert",  BORDER_NO,  BORDER_DEF, TILE_NO, TILE_NO},
+
+            {"Tile All",    BORDER_DEF, BORDER_DEF, TILE_YES, TILE_YES},
+            {"Tile Horiz",  BORDER_DEF, BORDER_NO,  TILE_YES, TILE_NO },
+            {"Tile Vert",   BORDER_NO,  BORDER_DEF, TILE_NO,  TILE_YES} };
+
 
 static image_info scaled_output;
 static gint scaler_mode;
+static gint border_mode;
 
 
 // scaler_name_get
@@ -80,6 +92,36 @@ gint scaler_mode_get(void) {
 //
 image_info * scaled_info_get(void) {
     return &scaled_output;
+}
+
+
+// border_mode_set
+//
+// Sets border processing mode
+//
+void border_mode_set(gint new_mode) {
+
+    if ((new_mode >= BORDER_ENUM_FIRST) && (new_mode < BORDER_ENUM_LAST))
+        border_mode = new_mode;
+}
+
+
+// border_mode_get
+//
+// Returns border processing mode
+//
+gint border_mode_get(void) {
+
+    return border_mode;
+}
+
+
+// border_mode_get
+//
+// Returns current morder mode settings (type border_info)
+//
+border_info border_options_get(void) {
+    return border_types[border_mode];
 }
 
 
@@ -272,4 +314,8 @@ void scalers_init(void) {
 
     // Now set the default scaler
     scaler_mode = SCALER_2X_HQX;
+
+    // Set the default processing mode
+    border_mode = BORDER_NONE;
  }
+
