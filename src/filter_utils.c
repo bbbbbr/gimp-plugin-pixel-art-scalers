@@ -188,10 +188,9 @@ void buffer_tiled_edge_copy (image_info * p_image, gint border_width, gint borde
 image_info buffer_grow_image_border (image_info * p_src_image, gint grow_x, gint grow_y) {
 
     image_info new_image;
-    glong      src_rowstride, new_rowstride;
+    glong      src_rowstride;
     glong      c, y;
     uint32_t * p_pix;
-    uint32_t * new_image_buf;
 
 
     // Require 4bpp (RGBA)
@@ -253,10 +252,8 @@ image_info buffer_grow_image_border (image_info * p_src_image, gint grow_x, gint
 image_info buffer_shrink_image_border (image_info * p_src_image, gint shrink_x, gint shrink_y) {
 
     image_info new_image;
-    glong      src_rowstride, new_rowstride;
-    glong      c, y;
-    uint32_t * p_pix;
-    uint32_t * new_image_buf;
+    glong      new_rowstride;
+    glong      y;
 
 
     // Require 4bpp (RGBA)
