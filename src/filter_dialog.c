@@ -62,7 +62,6 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
   GtkWidget * scaled_preview_window;
 
   GtkWidget * settings_table;
-  GtkWidget * align;
 
   GtkWidget * settings_scaler_combo;
   GtkWidget * settings_scaler_label;
