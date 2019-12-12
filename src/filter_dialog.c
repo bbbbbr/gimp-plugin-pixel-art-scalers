@@ -91,7 +91,7 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
   // Resize to show more of scaled preview by default (this sets MIN size)
   gtk_widget_set_size_request (dialog,
-                               540,
+                               550,
                                400);
 
 
@@ -202,7 +202,7 @@ gboolean pixel_art_scalers_dialog (GimpDrawable *drawable)
 
 
     // Create border label and right-align it
-    settings_border_label = gtk_label_new ("Image Border: " );
+    settings_border_label = gtk_label_new ("Border Assist: " );
         gtk_misc_set_alignment(GTK_MISC(settings_border_label), 1.0f, 0.5f);
 
     // Add a Combo box for the BORDER MODE

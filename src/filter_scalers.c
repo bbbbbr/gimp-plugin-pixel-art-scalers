@@ -22,13 +22,13 @@ static scaler_info scalers[SCALER_ENUM_LAST];
 static border_info border_types[BORDER_ENUM_LAST] =
           { {"None",      BORDER_NO,   BORDER_NO, TILE_NO, TILE_NO},
 
-            {"Padding All",   BORDER_DEF, BORDER_DEF, TILE_NO, TILE_NO},
-            {"Padding Horiz", BORDER_DEF, BORDER_NO,  TILE_NO, TILE_NO},
-            {"Padding Vert",  BORDER_NO,  BORDER_DEF, TILE_NO, TILE_NO},
+            {"Transparent  All",   BORDER_DEF, BORDER_DEF, TILE_NO, TILE_NO},
+            {"Transparent  Horiz", BORDER_DEF, BORDER_NO,  TILE_NO, TILE_NO},
+            {"Transparent  Vert",  BORDER_NO,  BORDER_DEF, TILE_NO, TILE_NO},
 
-            {"Tile All",    BORDER_DEF, BORDER_DEF, TILE_YES, TILE_YES},
-            {"Tile Horiz",  BORDER_DEF, BORDER_NO,  TILE_YES, TILE_NO },
-            {"Tile Vert",   BORDER_NO,  BORDER_DEF, TILE_NO,  TILE_YES} };
+            {"Tile  All",    BORDER_DEF, BORDER_DEF, TILE_YES, TILE_YES},
+            {"Tile  Horiz",  BORDER_DEF, BORDER_NO,  TILE_YES, TILE_NO },
+            {"Tile  Vert",   BORDER_NO,  BORDER_DEF, TILE_NO,  TILE_YES} };
 
 
 static image_info scaled_output;
