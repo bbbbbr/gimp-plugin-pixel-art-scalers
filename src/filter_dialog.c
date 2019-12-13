@@ -497,7 +497,6 @@ static void dialog_scaled_preview_check_resize(GtkWidget * preview_scaled, gint 
 void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 {
     GimpPixelRgn src_rgn;
-    gint         x, y;
     gint         original_bpp;
     guint        scale_factor;
     image_info   source_image;
@@ -511,11 +510,12 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
 
     // Get the working image area for either the preview sub-window or the entire image
     if (preview) {
-        gimp_preview_get_position (preview, &x, &y);
+        gimp_preview_get_position (preview, &source_image.x, &source_image.y);
         gimp_preview_get_size (preview, &source_image.width, &source_image.height);
     }
     else if (! gimp_drawable_mask_intersect (drawable->drawable_id,
-                                             &x, &y, &source_image.width, &source_image.height)) {
+                                             &source_image.x, &source_image.y,
+                                             &source_image.width, &source_image.height)) {
         return;
     }
 
@@ -523,7 +523,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
     source_image.bpp = drawable->bpp;
     original_bpp = source_image.bpp;
 
-    if (scaled_output_check_reapply_scalers(scaler_mode_get(), x, y)) {
+    if (scaled_output_check_reapply_scalers(scaler_mode_get(), source_image)) {
 
         // ====== GET THE SOURCE IMAGE ======
 
@@ -536,14 +536,15 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
         // Initialize source pixel region with drawable
         gimp_pixel_rgn_init (&src_rgn,
                              drawable,
-                             x, y,
+                             source_image.x, source_image.y,
                              source_image.width, source_image.height,
                              FALSE, FALSE);
 
         // Copy source image to working buffer
         gimp_pixel_rgn_get_rect (&src_rgn,
                                  (guchar *) source_image.p_imagebuf,
-                                 x, y, source_image.width, source_image.height);
+                                 source_image.x, source_image.y,
+                                 source_image.width, source_image.height);
 
         // Add alpha channel byte to source buffer if needed (scalers expect 4BPP RGBA)
         if (source_image.bpp == BYTE_SIZE_RGB_3BPP) { // i.e. !has_alpha
@@ -582,7 +583,7 @@ void pixel_art_scalers_run(GimpDrawable *drawable, GimpPreview  *preview)
         // ====== APPLY THE SCALER ======
 
         // Allocate output buffer for upscaled image
-        scaled_output_check_reallocate(scale_factor, source_image.width, source_image.height);
+        scaled_output_check_reallocate(scale_factor, source_image);
 
         // Expects 4BPP RGBA in source_image.p_imagebuf, outputs same to scaled_output->p_imagebuf
         scaler_apply(scaler_mode_get(),

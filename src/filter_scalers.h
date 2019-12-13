@@ -126,8 +126,8 @@
     void scaler_apply(int, uint32_t *, uint32_t *, int, int);
 
     void scaled_output_invalidate(void);
-    gint scaled_output_check_reapply_scalers(gint, gint, gint);
-    void scaled_output_check_reallocate(gint, gint, gint);
+    gint scaled_output_check_reapply_scalers(gint, image_info);
+    void scaled_output_check_reallocate(gint, image_info);
 
     void image_info_init(image_info *);
 

@@ -150,19 +150,25 @@ void scaled_output_invalidate(void) {
 //
 // Used to assist with output caching
 //
-gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint y_new) {
+gint scaled_output_check_reapply_scalers(gint scaler_mode_new, image_info src_image) {
 
-  gint result;
+    gint result;
+    gint scale_factor_new = scaler_scale_factor_get( scaler_mode_new );
 
-  result = ((scaled_output.scaler_mode != scaler_mode_new) ||
-            (scaled_output.x != x_new) ||
-            (scaled_output.y != y_new) ||
-            (scaled_output.valid_image == FALSE));
+    result = ((scaled_output.scaler_mode != scaler_mode_new) ||
+             (scaled_output.x != src_image.x) ||
+             (scaled_output.y != src_image.y) ||
+             (scaled_output.width  != (src_image.width  * scale_factor_new)) ||
+             (scaled_output.height != (src_image.height * scale_factor_new)) ||
+             (scaled_output.valid_image == FALSE));
 
-  scaled_output.x = x_new;
-  scaled_output.y = y_new;
+    scaled_output.x = src_image.x;
+    scaled_output.y = src_image.y;
 
-  return (result);
+    if (result)
+        scaled_output_invalidate();
+
+    return (result);
 }
 
 
@@ -170,16 +176,16 @@ gint scaled_output_check_reapply_scalers(gint scaler_mode_new, gint x_new, gint 
 //
 // Update output buffer size and re-allocate if needed
 //
-void scaled_output_check_reallocate(gint scale_factor_new, gint width_new, gint height_new)
+void scaled_output_check_reallocate(gint scale_factor_new, image_info src_image)
 {
     if ((scale_factor_new != scaled_output.scale_factor) ||
-        ((width_new  * scale_factor_new) != scaled_output.width) ||
-        ((height_new * scale_factor_new) != scaled_output.height) ||
+        ((src_image.width  * scale_factor_new) != scaled_output.width) ||
+        ((src_image.height * scale_factor_new) != scaled_output.height) ||
         (scaled_output.p_imagebuf == NULL)) {
 
         // Update the buffer size and re-allocate. The x uint32_t is for RGBA buffer size
-        scaled_output.width        = width_new  * scale_factor_new;
-        scaled_output.height       = height_new * scale_factor_new;
+        scaled_output.width        = src_image.width  * scale_factor_new;
+        scaled_output.height       = src_image.height * scale_factor_new;
         scaled_output.scale_factor = scale_factor_new;
         scaled_output.size_bytes = scaled_output.width * scaled_output.height * BYTE_SIZE_RGBA_4BPP;
 
