@@ -20,6 +20,7 @@ Supported image scalers:
 Options:
  * Force semi-transparent pixels to fully opaque / transparent (edge aliasing)
  * Suppress colors from alpha-hidden pixels (can sometimes cause discoloration at the edges)
+ * Tiled and transparent temporary border options to improve scaling in special cases
 
 
 Hints:
