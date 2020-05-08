@@ -8,6 +8,8 @@ These scalers are able to resize graphics in a way that avoids both bluring and 
 Download compiled executables here:
  * [Linux GIMP 2.8+ x64](/bin/linux)
  * [Windows GIMP 2.10.12+ x32](/bin/windows)
+ * macOS / OS X: See [Install on macOS using homebrew](#install-on-macos-using-homebrew)
+ 
 
 Supported image scalers:
  * HQX (hq2x, hq3x, hq4x)
@@ -35,10 +37,9 @@ Hints:
   * XBR: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 , https://github.com/Treeki/libxbr-standalone
   * Scale2x/3x : https://www.scale2x.it/ , https://opengameart.org/forumtopic/pixelart-scaler-scalenx-and-eaglenx-for-gimp
 
-## Quick instructions:
+## Build & Install instructions
 
-Native compile/install on Linux using below.
-
+#### Native compile/install on Linux:
 ```
 If GIMP & build tools not yet installed:
 (example for debian/ubuntu/mint)
@@ -57,6 +58,11 @@ Plug-in folder locations:
  Windows: C:\Program Files\GIMP 2\lib\gimp\2.0\plug-ins
 
 ```
-Guide for [Cross-compiling to Windows on Linux](https://github.com/bbbbbr/gimp-rom-bin/blob/master/doc/GIMP%20jhbuild%20for%20Windows%20on%20Linux.md)
-
-
+---
+#### Install on macOS using homebrew
+([Formula](https://github.com/ryan-robeson/homebrew-gimp/releases) courtesy of [@ryan-robeson](https://github.com/ryan-robeson).)
+```
+brew install ryan-robeson/gimp/pixel-art-scalers
+```
+---
+#### Guide for [Cross-compiling to Windows on Linux](https://github.com/bbbbbr/gimp-rom-bin/blob/master/doc/GIMP%20jhbuild%20for%20Windows%20on%20Linux.md)
