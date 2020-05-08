@@ -62,7 +62,8 @@ Plug-in folder locations:
 #### Install on macOS using homebrew
 ([Formula](https://github.com/ryan-robeson/homebrew-gimp/releases) courtesy of [@ryan-robeson](https://github.com/ryan-robeson).)
 ```
-brew install ryan-robeson/gimp/pixel-art-scalers
+1. Run: brew install ryan-robeson/gimp/pixel-art-scalers
+2. Then add the new plugin folder to GIMP's settings
 ```
 ---
 #### Guide for [Cross-compiling to Windows on Linux](https://github.com/bbbbbr/gimp-rom-bin/blob/master/doc/GIMP%20jhbuild%20for%20Windows%20on%20Linux.md)
