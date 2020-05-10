@@ -24,17 +24,17 @@ libexecdir = $(gimpplugindir)/plug-ins
 libexec_PROGRAMS = plugin_pixel_art_scalers
 
 plugin_pixel_art_scalers_SOURCES = \
-	filter_pixel_art_scalers.c \
-	filter_dialog.c \
-	filter_scalers.c \
-	filter_utils.c \
-	hq3x.c \
-	hqx_init.c \
-	hq2x.c \
-	hq4x.c \
-	xbr.c \
-	scaler_scalex.c \
-	scaler_nearestneighbor.c
+	gtk2/filter_pixel_art_scalers.c \
+	gtk2/filter_dialog.c \
+	gtk2/filter_scalers.c \
+	gtk2/filter_utils.c \
+	lib/hq3x.c \
+	lib/hqx_init.c \
+	lib/hq2x.c \
+	lib/hq4x.c \
+	lib/xbr.c \
+	lib/scaler_scalex.c \
+	lib/scaler_nearestneighbor.c
 
 
 
