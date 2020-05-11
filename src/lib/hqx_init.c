@@ -17,7 +17,7 @@
  */
 
 #include <stdint.h>
-#include "hqx.h"
+#include "../libpas.h"
 
 uint32_t   RGBtoYUV[16777216]; // TODO: can this be shared between HQX & XBR?  ~16MB of lookup table
 uint32_t   YUV1, YUV2;
@@ -26,7 +26,8 @@ void hqxInit(void)
 {
     /* Initalize RGB to YUV lookup table */
     uint32_t c, r, g, b, y, u, v;
-    for (c = 0; c < 16777215; c++) {
+    for (c = 0; c < 16777215; c++)
+    {
         r = (c & 0xFF0000) >> 16;
         g = (c & 0x00FF00) >> 8;
         b = c & 0x0000FF;
