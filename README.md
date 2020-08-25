@@ -9,7 +9,8 @@ Download compiled executables here:
  * [Linux GIMP 2.8+ x64](/bin/linux)
  * [Windows GIMP 2.10.12+ x32](/bin/windows)
  * macOS / OS X: See [Install on macOS using homebrew](#install-on-macos-using-homebrew)
- 
+
+Then place it in `%APPDATA%\GIMP\2.X\plug-ins` (Windows), `$HOME/Library/Application Support/GIMP/2.X/plug-ins` (macOS / OSX) or `$HOME/.gimp-2.X/plug-ins` (Linux).
 
 Supported image scalers:
  * HQX (hq2x, hq3x, hq4x)
