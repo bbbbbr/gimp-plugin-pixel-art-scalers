@@ -10,6 +10,7 @@ Download compiled executables here:
  * [Windows GIMP 2.10.12+ x32](/bin/windows)
  * macOS / OS X: See [Install on macOS using homebrew](#install-on-macos-using-homebrew)
  
+See [instructions below for where to install the binary](#install-folder--path-locations)
 
 Supported image scalers:
  * HQX (hq2x, hq3x, hq4x)
@@ -37,9 +38,22 @@ Hints:
   * XBR: https://forums.libretro.com/t/xbr-algorithm-tutorial/123 , https://github.com/Treeki/libxbr-standalone
   * Scale2x/3x : https://www.scale2x.it/ , https://opengameart.org/forumtopic/pixelart-scaler-scalenx-and-eaglenx-for-gimp
 
-## Build & Install instructions
+---
+## Install folder & path locations
 
-#### Native compile/install on Linux:
+Copy the "plugin-pixel-art-scalers"(.exe) binary to your GIMP plugin folder. The location will depend on your GIMP version and Operating System.
+```
+Plug-in folder locations: 
+(where 2.x is your gimp version. example: ~/.gimp-2.8/plug-ins)
+
+  * Linux: ~/.gimp-2.x/plug-ins
+  * Windows: %APPDATA%\GIMP\2.x\plug-ins  or  C:\Program Files\GIMP 2\lib\gimp\2.0\plug-ins
+  * macOS / OSX: $HOME/Library/Application Support/GIMP/2.x/plug-ins
+```
+---
+## Build instructions
+
+#### Native compile on Linux:
 ```
 If GIMP & build tools not yet installed:
 (example for debian/ubuntu/mint)
@@ -48,16 +62,10 @@ If GIMP & build tools not yet installed:
  * sudo apt install libgimp2.0-dev
 
 Then:
-* cd gimp-rom-bin
+* cd gimp-plugin-pixel-art-scalers
 * make
-
-Then copy the resulting "plugin-pixel-art-scalers" to your GIMP plugin folder, depends on version
-
-Plug-in folder locations:
- Linux: ~/.gimp-2.8/plug-ins  , or ~/.config/GIMP/2.10/plug-ins
- Windows: C:\Program Files\GIMP 2\lib\gimp\2.0\plug-ins
-
 ```
+
 ---
 #### Install on macOS using homebrew
 ([Formula](https://github.com/ryan-robeson/homebrew-gimp/releases) courtesy of [@ryan-robeson](https://github.com/ryan-robeson).)
