@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "scaler_nearestneighbor.h"
+#include "../libpas.h"
 
 static const char TRUE  = 1;
 static const char FALSE = 0;
@@ -39,21 +39,25 @@ void scaler_nearest_nx(uint32_t * sp,  uint32_t * dp, int Xres, int Yres, int sc
     line_width_scaled = (Xres * scale_factor * (bpp/sizeof(uint32_t)) );
 
 
-    for (y=0; y < Yres; y++) {
+    for (y=0; y < Yres; y++)
+    {
         // Copy each line from the source image
-        for (x=0; x < Xres; x++) {
+        for (x=0; x < Xres; x++)
+        {
 
             // Copy new pixels from left source pixel
-            for (sx=0; sx < scale_factor; sx++) {
+            for (sx=0; sx < scale_factor; sx++)
+            {
                 // Copy each uint32 (RGBA 4BPP) pixel to the dest buffer
-                    *dp++ = *sp;
-                }
+                *dp++ = *sp;
+            }
             // Move to next source pixel
             sp++;
         }
 
         // Duplicate the preceding line (at scaled size) N times if needed
-        for (sx=0; sx < (scale_factor -1); sx++) {
+        for (sx=0; sx < (scale_factor -1); sx++)
+        {
             // memcopy operates on 8 bits, the data size is 32 bits
             memcpy(dp, dp - line_width_scaled, line_width_scaled * sizeof(uint32_t));
             dp+= line_width_scaled;

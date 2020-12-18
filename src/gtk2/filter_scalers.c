@@ -13,10 +13,7 @@
 #include "filter_scalers.h"
 
 // Filter includes
-#include "hqx.h"
-#include "xbr_filters.h"
-#include "scaler_scalex.h"
-#include "scaler_nearestneighbor.h"
+#include "../libpas.h"
 
 static scaler_info scalers[SCALER_ENUM_LAST];
 static border_info border_types[BORDER_ENUM_LAST] =
